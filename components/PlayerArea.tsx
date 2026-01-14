@@ -13,6 +13,7 @@ interface PlayerAreaProps {
   onCardClick?: (id: string) => void;
   targetingMode?: TargetingMode;
   onTargetSelect?: (playerId: string, cardId: string) => void;
+  selectedAttackerIds?: string[]; // Phase 7
 }
 
 const CLASSES = ['Vanas', 'Vahas', 'Dvas', 'Davis', 'Rishies', 'Kurus'];
@@ -25,7 +26,8 @@ export const PlayerArea: React.FC<PlayerAreaProps> = ({
   selectedCardId,
   onCardClick,
   targetingMode = 'none',
-  onTargetSelect
+  onTargetSelect,
+  selectedAttackerIds = []
 }) => {
   const isOpponent = !isCurrent;
   const representedClasses = new Set(player.sena.map(c => c.classSymbol).filter(Boolean));
@@ -37,8 +39,25 @@ export const PlayerArea: React.FC<PlayerAreaProps> = ({
       ${position === 'top' ? 'flex-col-reverse' : 'flex-col'}
       ${isOpponent ? 'scale-90 md:scale-95' : 'scale-100'}
       ${isActive ? 'animate-pulse-subtle' : ''}
-      ${targetingMode !== 'none' && !isCurrent ? 'z-[110]' : ''}
+      ${targetingMode !== 'none' && (isCurrent || targetingMode === 'curse') ? 'z-[110]' : ''}
     `}>
+      {/* Jail Area / Captured Assuras */}
+      <div className={`flex gap-2 justify-center py-2 ${position === 'top' ? 'order-last mt-4' : 'order-first mb-4'}`}>
+        {player.jail.map(assura => (
+          <div key={assura.id} className="group relative">
+            <GameCard card={assura} size="xs" className="ring-2 ring-red-500/30" isInteractive={false} />
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full border border-white flex items-center justify-center shadow-lg">
+               <span className="text-[6px] font-black text-white">⛓</span>
+            </div>
+          </div>
+        ))}
+        {Array.from({ length: 3 - player.jail.length }).map((_, i) => (
+          <div key={i} className="w-8 h-12 rounded border border-white/5 bg-black/20 flex items-center justify-center opacity-20">
+             <span className="text-[6px] font-black uppercase text-white/40">Slot</span>
+          </div>
+        ))}
+      </div>
+
       {/* Class Tracker */}
       <div className={`flex gap-1 justify-center ${position === 'top' ? 'mb-2' : 'mt-0'}`}>
         {CLASSES.map(cls => (
@@ -98,16 +117,24 @@ export const PlayerArea: React.FC<PlayerAreaProps> = ({
         <h5 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em] text-white/20 px-2">Sena Forces</h5>
         <div className="flex gap-4 min-h-[120px] md:min-h-[160px] p-2 md:p-4 bg-black/30 rounded-2xl border border-white/5 relative overflow-x-auto scrollbar-hide">
           {player.sena.map(major => {
+            const isSelectedAttacker = selectedAttackerIds.includes(major.id);
             const isTargetable = 
               (targetingMode === 'astra' && isCurrent) || 
-              (targetingMode === 'curse' && isOpponent);
+              (targetingMode === 'curse' && isOpponent) ||
+              (targetingMode === 'invoke' && isCurrent && !major.invokedThisTurn) ||
+              (targetingMode === 'capture-majors' && isCurrent);
 
             return (
               <div key={major.id} className="relative group flex-shrink-0">
+                {major.invokedThisTurn && (
+                  <div className="absolute top-0 right-0 z-20 bg-gray-500 rounded-full w-4 h-4 flex items-center justify-center border border-white/20 shadow-lg">
+                    <span className="text-[8px] font-black text-white">✓</span>
+                  </div>
+                )}
                 <GameCard 
                   card={major} 
                   size="sm" 
-                  className={`relative z-10 ${isTargetable ? 'ring-yellow-400 ring-offset-2' : ''}`} 
+                  className={`relative z-10 ${isTargetable ? 'ring-yellow-400 ring-offset-2' : ''} ${major.invokedThisTurn ? 'grayscale opacity-60' : ''} ${isSelectedAttacker ? 'ring-4 ring-red-500 animate-pulse' : ''}`} 
                   isInteractive={isTargetable}
                   isTargetable={isTargetable}
                   onClick={() => isTargetable && onTargetSelect?.(player.id, major.id)}

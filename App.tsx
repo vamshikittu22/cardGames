@@ -46,10 +46,13 @@ const App: React.FC = () => {
       turnStartTime: Date.now(),
       activePlayerIndex: 0,
       assuras: [],
+      assuraReserve: [],
       gameLogs: [],
       actionsUsedThisTurn: [],
       drawDeck: [],
-      submergePile: []
+      submergePile: [],
+      // Fix: Added missing shaknyModifiers initialization
+      shaknyModifiers: []
     };
 
     setRooms(prev => ({ ...prev, [code]: newRoom }));
@@ -62,7 +65,7 @@ const App: React.FC = () => {
     const code = "LOCAL";
     const pId = generateId();
     
-    // Phase 4: Initialization
+    // Phase 4 & 7: Initialization
     const masterDeck = createMasterDeck();
     const assuraPool = createAssuraPool();
     const generals = shuffle(createGenerals());
@@ -114,10 +117,13 @@ const App: React.FC = () => {
       turnStartTime: Date.now(),
       activePlayerIndex: firstPlayerIdx,
       assuras: assuraPool.splice(0, 3),
+      assuraReserve: assuraPool,
       gameLogs: [],
       actionsUsedThisTurn: [],
       drawDeck: masterDeck,
-      submergePile: []
+      submergePile: [],
+      // Fix: Added missing shaknyModifiers initialization
+      shaknyModifiers: []
     };
 
     setRooms(prev => ({ ...prev, [code]: newRoom }));
@@ -189,8 +195,11 @@ const App: React.FC = () => {
           activePlayerIndex: firstPlayerIdx,
           turnStartTime: Date.now(),
           assuras: assuraPool.splice(0, 3),
+          assuraReserve: assuraPool,
           drawDeck: masterDeck,
-          submergePile: []
+          submergePile: [],
+          // Fix: Ensure shaknyModifiers is reset on game start
+          shaknyModifiers: []
         }
       };
     });
