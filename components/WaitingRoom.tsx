@@ -46,22 +46,25 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
           </h2>
           <div className="flex items-center gap-4 mt-2">
             <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Room Status:</p>
-            <span className="text-xs font-black uppercase text-[#F59E0B]">Waiting for Players</span>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></div>
+              <span className="text-xs font-black uppercase text-[#EA580C]">Gathering Spirits</span>
+            </div>
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow-xl border-2 border-gray-100 flex flex-col items-center gap-2">
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Share Code</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Access Key</p>
           <div className="flex items-center gap-4">
             <span className="text-4xl font-black font-mono tracking-widest text-[#0F766E]">{room.roomCode}</span>
             <button 
               onClick={handleCopy}
-              className={`p-3 rounded-lg ${copied ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'} transition-all hover:scale-110`}
+              className={`p-3 rounded-lg ${copied ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'} transition-all hover:scale-110 shadow-sm`}
             >
               {copied ? (
                 <div className="flex items-center gap-2 text-xs font-bold">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  Copied
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Synced
                 </div>
               ) : (
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -76,12 +79,12 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
         <div className="lg:col-span-3 space-y-8">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-black uppercase tracking-tight text-gray-800">
-              Players <span className="ml-2 text-gray-300">({totalCount}/{room.maxPlayers})</span>
+              Soul Gathering <span className="ml-2 text-gray-300">({totalCount}/{room.maxPlayers})</span>
             </h3>
             <div className="flex items-center gap-4">
                <div className="text-right">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Ready Check</p>
-                  <p className="font-bold text-sm">{readyCount} of {totalCount} Ready</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Harmony</p>
+                  <p className="font-bold text-sm">{readyCount} of {totalCount} Aligned</p>
                </div>
                <div className="w-12 h-12 rounded-full border-4 border-gray-100 flex items-center justify-center font-black text-[#0F766E]">
                   {Math.round((readyCount/totalCount)*100)}%
@@ -100,27 +103,27 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
             ))}
             {/* Empty Slots */}
             {Array.from({ length: room.maxPlayers - totalCount }).map((_, i) => (
-              <div key={i} className="border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center p-6 h-[200px]">
-                <p className="text-xs font-bold uppercase tracking-widest text-gray-300">Slot Available</p>
+              <div key={i} className="border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center p-6 h-[200px] opacity-40">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 animate-pulse">Awaiting Soul Presence</p>
               </div>
             ))}
           </div>
 
           {/* Footer Actions */}
           <div className="flex flex-col sm:flex-row gap-4 pt-12 items-center justify-between">
-            <Button variant="ghost" onClick={onLeaveRoom}>Leave Room</Button>
+            <Button variant="ghost" onClick={onLeaveRoom}>Dissolve Presence</Button>
             
             {isCreator ? (
                <Button 
                 onClick={onStartGame}
                 disabled={!isAllReady}
-                className={`w-full sm:w-80 h-16 text-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 ${!isAllReady ? 'grayscale' : ''}`}
+                className={`w-full sm:w-80 h-16 text-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 ${!isAllReady ? 'grayscale opacity-50' : 'animate-pulse'}`}
               >
-                Start Journey
+                Begin Journey
               </Button>
             ) : (
-              <div className="px-8 py-4 bg-gray-100 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-500">
-                Waiting for host to start...
+              <div className="px-8 py-4 bg-gray-50 border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 animate-pulse">
+                Aligning with Host Intent...
               </div>
             )}
           </div>

@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Player } from '../types';
+import { socket } from '../lib/socket';
 
 interface GameHeaderProps {
   turnNumber: number;
@@ -10,9 +11,10 @@ interface GameHeaderProps {
 
 export const GameHeader: React.FC<GameHeaderProps> = ({ turnNumber, activePlayer, turnStartTime }) => {
   const [seconds, setSeconds] = useState(0);
+  const [isConnected, setIsConnected] = useState(socket.connected);
 
   useEffect(() => {
-    // Reset timer when turnStartTime changes
+    // Timer Logic
     const start = Math.floor(turnStartTime / 1000);
     const update = () => {
       const now = Math.floor(Date.now() / 1000);
@@ -20,7 +22,16 @@ export const GameHeader: React.FC<GameHeaderProps> = ({ turnNumber, activePlayer
     };
     update();
     const interval = setInterval(update, 1000);
-    return () => clearInterval(interval);
+
+    // Connection Sync Indicator
+    const syncCheck = setInterval(() => {
+      setIsConnected(socket.connected);
+    }, 2000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(syncCheck);
+    };
   }, [turnStartTime]);
 
   const formatTime = (s: number) => {
@@ -35,11 +46,14 @@ export const GameHeader: React.FC<GameHeaderProps> = ({ turnNumber, activePlayer
         <div className="hidden md:block space-y-1">
           <h1 className="text-2xl font-black uppercase tracking-tighter text-white leading-none">Tales of Dharma</h1>
           <div className="flex items-center gap-3">
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Chapter 1: The Gathering</span>
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-red-500 shadow-[0_0_8px_#ef4444]'} animate-pulse`}></div>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">
+              {isConnected ? 'Authoritative Realm Synced' : 'Sync Connection Interrupted'}
+            </span>
           </div>
         </div>
-        <div className="flex flex-col items-center justify-center bg-white/5 border border-white/10 px-4 py-1 rounded-lg">
-           <span className="text-[8px] font-black uppercase tracking-[0.2em] text-[#F59E0B]">Cycle</span>
+        <div className="flex flex-col items-center justify-center bg-white/5 border border-white/10 px-4 py-1 rounded-lg backdrop-blur-sm">
+           <span className="text-[8px] font-black uppercase tracking-with-widest text-[#F59E0B]">Cycle</span>
            <span className="text-lg font-black text-white">{turnNumber}</span>
         </div>
       </div>
@@ -55,7 +69,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({ turnNumber, activePlayer
 
       <div className="flex items-center gap-6 pointer-events-auto">
         <button className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-500/20 hover:border-red-500/40 transition-all">
-          Leave
+          Leave Realm
         </button>
       </div>
     </header>

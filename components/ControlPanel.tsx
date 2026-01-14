@@ -31,6 +31,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 }) => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [kpAnimation, setKpAnimation] = useState(false);
+  const [localSyncing, setLocalSyncing] = useState(false);
 
   useEffect(() => {
     setKpAnimation(true);
@@ -48,6 +49,13 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
     { label: 'Capture Assura', cost: 2, icon: '⛓️', color: '#047857' },
   ];
 
+  const handleActionClick = (label: string, cost: number) => {
+    setLocalSyncing(true);
+    onAction(label, cost);
+    // Visual reset after network lag simulation
+    setTimeout(() => setLocalSyncing(false), 800);
+  };
+
   const handleEndTurnClick = () => {
     if (kp > 0) setShowConfirm(true);
     else onEndTurn();
@@ -64,7 +72,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   }
 
   return (
-    <div className="bg-black/80 backdrop-blur-3xl border-t border-white/10 px-6 md:px-12 py-6 rounded-t-[40px] shadow-[0_-20px_60px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom duration-500">
+    <div className={`bg-black/80 backdrop-blur-3xl border-t border-white/10 px-6 md:px-12 py-6 rounded-t-[40px] shadow-[0_-20px_60px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom duration-500 ${localSyncing ? 'opacity-80' : ''}`}>
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-6">
         <div className="flex-shrink-0 flex flex-col items-center">
           <p className="text-[10px] font-black uppercase tracking-widest text-[#F59E0B]/60 mb-2">Karma Balance</p>
@@ -89,7 +97,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             return (
               <button
                 key={action.label}
-                onClick={() => !isDisabled && onAction(action.label, action.cost)}
+                onClick={() => !isDisabled && handleActionClick(action.label, action.cost)}
                 disabled={isDisabled}
                 className={`relative flex-1 min-w-[110px] h-24 flex flex-col items-center justify-center gap-1 rounded-2xl border-2 ${UI_TRANSITIONS} ${isDisabled ? 'border-white/5 bg-white/5 opacity-40 cursor-not-allowed' : 'border-white/10 hover:border-white/40 hover:-translate-y-1 hover:shadow-2xl'}`}
                 style={{ backgroundColor: !isDisabled ? `${action.color}22` : undefined, borderColor: !isDisabled ? `${action.color}44` : undefined }}

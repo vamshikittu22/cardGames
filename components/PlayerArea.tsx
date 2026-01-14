@@ -9,8 +9,6 @@ interface PlayerAreaProps {
   isActive: boolean;
   isCurrent: boolean;
   position: 'top' | 'bottom' | 'left' | 'right';
-  selectedCardId?: string | null;
-  onCardClick?: (id: string) => void;
   targetingMode?: TargetingMode;
   onTargetSelect?: (playerId: string, cardId: string) => void;
   selectedAttackerIds?: string[];
@@ -24,8 +22,6 @@ export const PlayerArea: React.FC<PlayerAreaProps> = ({
   isActive, 
   isCurrent, 
   position,
-  selectedCardId,
-  onCardClick,
   targetingMode = 'none',
   onTargetSelect,
   selectedAttackerIds = [],
@@ -44,8 +40,8 @@ export const PlayerArea: React.FC<PlayerAreaProps> = ({
       ${position === 'top' ? 'flex-col-reverse' : 'flex-col'}
       ${isOpponent ? 'scale-90 md:scale-95' : 'scale-100'}
       ${isActive && !isGameOver ? 'animate-pulse-subtle' : ''}
-      ${targetingMode !== 'none' && (isCurrent || targetingMode === 'curse') ? 'z-[110]' : ''}
       ${isGameOver ? 'opacity-60 grayscale-[0.2]' : ''}
+      w-full max-w-6xl
     `}>
       {/* Jail Area / Captured Assuras */}
       <div className={`flex flex-col items-center gap-2 py-2 ${position === 'top' ? 'order-last mt-4' : 'order-first mb-4'}`}>
@@ -100,12 +96,11 @@ export const PlayerArea: React.FC<PlayerAreaProps> = ({
             <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-white text-base md:text-xl font-black uppercase shadow-inner`} style={{ backgroundColor: player.color }}>
               {player.name[0]}
             </div>
-            {isActive && !isGameOver && <div className="absolute -inset-2 border-2 border-[#F59E0B]/30 rounded-full animate-ping opacity-30"></div>}
           </div>
           <div>
             <h3 className="text-sm md:text-lg font-black uppercase tracking-tighter text-white">{player.name}</h3>
             <p className={`text-[8px] md:text-[10px] font-bold uppercase tracking-widest leading-none ${isActive ? 'text-[#F59E0B]' : 'text-white/20'}`}>
-              {isGameOver ? 'Fates Revealed' : isActive ? 'Current Prophecy' : 'Observing'}
+              {isGameOver ? 'Fates Revealed' : isActive ? 'Current Turn' : 'Waiting'}
             </p>
           </div>
         </div>
@@ -113,17 +108,7 @@ export const PlayerArea: React.FC<PlayerAreaProps> = ({
         <div className="flex items-center gap-4 md:gap-8">
           <div className="text-center">
             <p className="text-[6px] md:text-[8px] font-black uppercase tracking-widest text-white/40 mb-1">Karma</p>
-            <div className="flex items-center gap-1">
-               <div className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] shadow-[0_0_8px_#F59E0B]"></div>
-               <p className="text-xl md:text-3xl font-black text-[#F59E0B] leading-none">{player.karmaPoints}</p>
-            </div>
-          </div>
-          
-          <div className="h-8 md:h-10 w-px bg-white/10"></div>
-
-          <div className="text-right">
-             <p className="text-[6px] md:text-[8px] font-black uppercase tracking-widest text-white/40 mb-1">Hand</p>
-             <p className="text-sm font-black text-white/60">{player.hand.length}</p>
+            <p className="text-xl md:text-3xl font-black text-[#F59E0B] leading-none">{player.karmaPoints}</p>
           </div>
         </div>
       </div>
@@ -137,21 +122,15 @@ export const PlayerArea: React.FC<PlayerAreaProps> = ({
             const isTargetable = !isGameOver && (
               (targetingMode === 'astra' && isCurrent) || 
               (targetingMode === 'curse' && isOpponent) ||
-              (targetingMode === 'invoke' && isCurrent && !major.invokedThisTurn) ||
-              (targetingMode === 'capture-majors' && isCurrent)
+              (targetingMode === 'invoke' && isCurrent && !major.invokedThisTurn)
             );
 
             return (
               <div key={major.id} className="relative group flex-shrink-0">
-                {major.invokedThisTurn && (
-                  <div className="absolute top-0 right-0 z-20 bg-gray-500 rounded-full w-4 h-4 flex items-center justify-center border border-white/20 shadow-lg">
-                    <span className="text-[8px] font-black text-white">✓</span>
-                  </div>
-                )}
                 <GameCard 
                   card={major} 
                   size="sm" 
-                  className={`relative z-10 ${isTargetable ? 'ring-yellow-400 ring-offset-2' : ''} ${major.invokedThisTurn ? 'grayscale opacity-60' : ''} ${isSelectedAttacker ? 'ring-4 ring-red-500 animate-pulse' : ''}`} 
+                  className={`relative z-10 ${isTargetable ? 'ring-yellow-400 ring-offset-2' : ''} ${major.invokedThisTurn ? 'grayscale opacity-60' : ''} ${isSelectedAttacker ? 'ring-4 ring-red-500' : ''}`} 
                   isInteractive={isTargetable}
                   isTargetable={isTargetable}
                   onClick={() => isTargetable && onTargetSelect?.(player.id, major.id)}
@@ -167,47 +146,17 @@ export const PlayerArea: React.FC<PlayerAreaProps> = ({
         </div>
       </div>
 
-      {/* Hand Area */}
-      {isCurrent ? (
-        <div className={`relative group h-48 md:h-64 flex flex-col items-center ${targetingMode !== 'none' || isGameOver ? 'opacity-20 pointer-events-none' : ''}`}>
-          <div className="w-full flex items-center justify-center gap-1 py-4 md:py-8 px-6 md:px-12 relative overflow-x-auto scrollbar-hide min-w-[300px] max-w-5xl">
-            <div className="flex gap-2 min-w-max px-20 pb-4">
-              {player.hand.map((card, i) => {
-                const isSelected = selectedCardId === card.id;
-                return (
-                  <div 
-                    key={card.id} 
-                    onClick={() => !isGameOver && onCardClick?.(card.id)}
-                    className={`transform ${UI_TRANSITIONS} cursor-pointer`}
-                    style={{ 
-                      zIndex: isSelected ? 200 : 30 + i,
-                      transform: `scale(${isSelected ? 1.15 : 1}) ${isSelected ? 'translateY(-20px)' : ''}`,
-                    }}
-                  >
-                    <GameCard 
-                      card={card} 
-                      size="md" 
-                      isHeld={isSelected}
-                      className={`${isSelected ? 'ring-4 ring-[#F59E0B] shadow-[0_0_40px_rgba(245,158,11,0.4)]' : ''}`} 
-                      isInteractive={false}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div className="absolute bottom-2 text-[8px] font-black uppercase tracking-widest text-white/20">
-            {player.hand.length} cards in hand • {isGameOver ? 'Dharma is Decided' : 'Click to select'}
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center">
-          <div className="flex -space-x-8 md:-space-x-12 justify-center py-4 opacity-40 hover:opacity-60 transition-opacity">
+      {/* Opponent Hand Display */}
+      {isOpponent && (
+        <div className="flex flex-col items-center mt-4">
+          <div className="flex -space-x-8 md:-space-x-12 justify-center py-4 opacity-40">
             {Array.from({ length: Math.min(player.hand.length, 6) }).map((_, i) => (
-              <GameCard key={i} card={{} as IGameCard} isBack size="sm" isInteractive={false} />
+              <div key={i} className="transform -rotate-6">
+                 <GameCard card={{} as IGameCard} isBack size="xs" isInteractive={false} />
+              </div>
             ))}
           </div>
-          <div className="text-[10px] font-black text-white/20 uppercase tracking-widest">{player.hand.length} cards</div>
+          <div className="text-[10px] font-black text-white/20 uppercase tracking-widest">{player.hand.length} cards in hand</div>
         </div>
       )}
     </div>

@@ -43,6 +43,7 @@ export interface Player {
   color: string;
   isReady: boolean;
   isCreator: boolean;
+  isConnected: boolean; // Tracks real-time connection status
   // Game State
   karmaPoints: number;
   hand: GameCard[];
@@ -118,3 +119,21 @@ export interface Room {
 
 export type ViewState = 'landing' | 'lobby' | 'in-game';
 export type TargetingMode = 'none' | 'astra' | 'curse' | 'invoke' | 'capture-assura' | 'capture-majors' | 'clash-select' | 'shakny-select';
+
+export type SocketEvent = 
+  | 'create_room' 
+  | 'join_room' 
+  | 'leave_room' 
+  | 'toggle_ready' 
+  | 'start_game' 
+  | 'chat_message'
+  | 'game_action'
+  | 'interrupt_action'
+  | 'room_updated'
+  | 'error';
+
+export interface TutorialStep {
+  title: string;
+  content: string;
+  target?: string;
+}

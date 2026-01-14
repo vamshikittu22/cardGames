@@ -1,0 +1,323 @@
+
+import { Room, Player, GameCard, ChatMessage, LogEntry, WinCondition } from './types';
+import { generateId, generateRoomCode, createMasterDeck, createAssuraPool, createGenerals, shuffle, validateAssuraRequirement } from './utils';
+
+/**
+ * GameSocketBridge emulates a WebSocket connection using BroadcastChannel.
+ * This acts as the single source of truth for the game state across all tabs.
+ */
+class GameSocketBridge {
+  private listeners: Record<string, ((data: any) => void)[]> = {};
+  private authoritativeRoom: Room | null = null;
+  private channel: BroadcastChannel;
+  public connected: boolean = true;
+
+  constructor() {
+    this.channel = new BroadcastChannel('tales_of_dharma_sync');
+    this.channel.onmessage = (event) => {
+      const { type, data } = event.data;
+      if (type === 'BROADCAST_STATE') {
+        this.handleStateUpdate(data);
+      } else if (this.listeners[type]) {
+        this.listeners[type].forEach(cb => cb(data));
+      }
+    };
+
+    setInterval(() => {
+      this.connected = navigator.onLine;
+    }, 2000);
+  }
+
+  on(event: string, callback: (data: any) => void) {
+    if (!this.listeners[event]) this.listeners[event] = [];
+    this.listeners[event].push(callback);
+  }
+
+  emit(event: string, data: any) {
+    setTimeout(() => {
+      this.processAuthoritativeAction(event, data);
+    }, 120);
+  }
+
+  private handleStateUpdate(data: { room: Room }) {
+    this.authoritativeRoom = data.room;
+    if (this.listeners['room_updated']) {
+      this.listeners['room_updated'].forEach(cb => cb({ room: data.room }));
+    }
+  }
+
+  private broadcast(room: Room) {
+    this.authoritativeRoom = room;
+    this.channel.postMessage({ type: 'BROADCAST_STATE', data: { room } });
+    if (this.listeners['room_updated']) {
+      this.listeners['room_updated'].forEach(cb => cb({ room }));
+    }
+  }
+
+  private processAuthoritativeAction(event: string, data: any) {
+    let room = this.authoritativeRoom;
+
+    switch (event) {
+      case 'create_room':
+        const code = generateRoomCode();
+        const pId = generateId();
+        const newRoom: Room = {
+          roomCode: code,
+          roomName: data.roomName,
+          maxPlayers: data.maxPlayers,
+          players: [{
+            id: pId,
+            name: data.playerName,
+            color: data.color,
+            isReady: false,
+            isCreator: true,
+            isConnected: true,
+            karmaPoints: 3,
+            hand: [],
+            sena: [],
+            jail: []
+          }],
+          status: 'waiting',
+          createdAt: Date.now(),
+          messages: [],
+          currentTurn: 1,
+          turnStartTime: Date.now(),
+          activePlayerIndex: 0,
+          assuras: [],
+          assuraReserve: [],
+          gameLogs: [],
+          actionsUsedThisTurn: [],
+          drawDeck: [],
+          submergePile: [],
+          shaknyModifiers: []
+        };
+        if (data.isSinglePlayer) {
+          this.initializeGame(newRoom);
+        }
+        if (this.listeners['room_updated']) {
+          this.listeners['room_updated'].forEach(cb => cb({ room: newRoom, currentPlayerId: pId }));
+        }
+        this.broadcast(newRoom);
+        break;
+
+      case 'join_room':
+        if (room && room.roomCode === data.roomCode) {
+          if (room.players.length >= room.maxPlayers) {
+            this.emitToLocal('error', 'The realm is full.');
+            return;
+          }
+          const joinId = generateId();
+          room.players.push({
+            id: joinId,
+            name: data.playerName,
+            color: data.color,
+            isReady: false,
+            isCreator: false,
+            isConnected: true,
+            karmaPoints: 3,
+            hand: [],
+            sena: [],
+            jail: []
+          });
+          if (this.listeners['room_updated']) {
+            this.listeners['room_updated'].forEach(cb => cb({ room, currentPlayerId: joinId }));
+          }
+          this.broadcast(room);
+        } else {
+          this.emitToLocal('error', 'Room not found.');
+        }
+        break;
+
+      case 'toggle_ready':
+        if (!room) return;
+        room.players = room.players.map(p => p.id === data.playerId ? { ...p, isReady: !p.isReady } : p);
+        this.broadcast(room);
+        break;
+
+      case 'chat_message':
+        if (!room) return;
+        const msg: ChatMessage = {
+          id: generateId(),
+          playerId: data.playerId,
+          playerName: data.playerName,
+          text: data.text,
+          timestamp: Date.now()
+        };
+        room.messages = [...room.messages, msg];
+        this.broadcast(room);
+        break;
+
+      case 'start_game':
+        if (!room) return;
+        this.initializeGame(room);
+        this.broadcast(room);
+        break;
+
+      case 'game_action':
+        this.handleGameLogic(data.actionType, data.payload, data.playerId);
+        break;
+
+      case 'interrupt_action':
+        this.handleInterruptLogic(data.type, data.payload, data.playerId);
+        break;
+
+      case 'reset_room':
+        if (!room) return;
+        room.status = 'waiting';
+        room.winner = undefined;
+        room.players = room.players.map(p => ({ ...p, isReady: false, hand: [], sena: [], jail: [] }));
+        room.currentTurn = 1;
+        room.gameLogs = [];
+        this.broadcast(room);
+        break;
+    }
+  }
+
+  private initializeGame(room: Room) {
+    const deck = createMasterDeck();
+    const assuras = createAssuraPool();
+    const generals = shuffle(createGenerals());
+    
+    room.players = room.players.map((p, i) => ({
+      ...p,
+      hand: [generals[i % generals.length], ...deck.splice(0, 5)],
+      karmaPoints: 3,
+      isReady: true
+    }));
+    
+    room.status = 'in-game';
+    room.drawDeck = deck;
+    room.assuras = assuras.splice(0, 3);
+    room.assuraReserve = assuras;
+    room.activePlayerIndex = 0;
+    room.turnStartTime = Date.now();
+  }
+
+  private handleGameLogic(type: string, payload: any, pId: string) {
+    let room = this.authoritativeRoom;
+    if (!room) return;
+    const player = room.players.find(p => p.id === pId);
+    if (!player) return;
+
+    const activePlayer = room.players[room.activePlayerIndex];
+    const isTurn = activePlayer.id === pId;
+
+    switch (type) {
+      case 'DRAW_CARD':
+        if (!isTurn || player.karmaPoints < 1) return;
+        if (room.drawDeck.length === 0) {
+          if (room.submergePile.length === 0) return;
+          room.drawDeck = shuffle(room.submergePile);
+          room.submergePile = [];
+        }
+        const card = room.drawDeck.shift()!;
+        player.hand = [...player.hand, card];
+        player.karmaPoints -= 1;
+        room.gameLogs.push({ 
+          id: generateId(), turn: room.currentTurn, playerName: player.name, 
+          action: 'drew a card from the Cosmos', kpSpent: 1, timestamp: Date.now() 
+        });
+        break;
+
+      case 'PLAY_CARD':
+        const cost = payload.cost || 0;
+        if (player.karmaPoints < cost) return;
+        const cardIdx = player.hand.findIndex(c => c.id === payload.cardId);
+        if (cardIdx === -1) return;
+        const playedCard = player.hand.splice(cardIdx, 1)[0];
+        player.karmaPoints -= cost;
+
+        if (playedCard.type === 'Major') {
+          player.sena = [...player.sena, playedCard];
+        } else {
+          room.submergePile = [...room.submergePile, playedCard];
+        }
+
+        room.gameLogs.push({ 
+          id: generateId(), turn: room.currentTurn, playerName: player.name, 
+          action: `played ${playedCard.name}`, kpSpent: cost, timestamp: Date.now() 
+        });
+        this.checkWinConditions(room);
+        break;
+
+      case 'END_TURN':
+        if (!isTurn) return;
+        room.activePlayerIndex = (room.activePlayerIndex + 1) % room.players.length;
+        room.currentTurn += 1;
+        room.turnStartTime = Date.now();
+        room.actionsUsedThisTurn = [];
+        room.players.forEach((p, idx) => {
+          if (idx === room.activePlayerIndex) p.karmaPoints = Math.min(10, p.karmaPoints + 3);
+          p.sena.forEach(m => m.invokedThisTurn = false);
+        });
+        break;
+
+      case 'CAPTURE_RESULT':
+        const { isCaptured, cardId, attackerIds } = payload;
+        const target = room.assuras.find(a => a.id === cardId);
+        if (isCaptured && target) {
+           player.jail = [...player.jail, target];
+           room.assuras = room.assuras.filter(a => a.id !== cardId);
+           if (room.assuraReserve.length > 0) room.assuras.push(room.assuraReserve.shift()!);
+           room.gameLogs.push({ 
+             id: generateId(), turn: room.currentTurn, playerName: player.name, 
+             action: `captured ${target.name}`, kpSpent: 0, timestamp: Date.now() 
+           });
+        } else if (attackerIds) {
+           const attackers = player.sena.filter(m => attackerIds.includes(m.id));
+           room.submergePile = [...room.submergePile, ...attackers];
+           player.sena = player.sena.filter(m => !attackerIds.includes(m.id));
+           room.gameLogs.push({ 
+             id: generateId(), turn: room.currentTurn, playerName: player.name, 
+             action: `lost forces in retaliation`, kpSpent: 0, timestamp: Date.now() 
+           });
+        }
+        this.checkWinConditions(room);
+        break;
+    }
+
+    this.broadcast(room);
+  }
+
+  private handleInterruptLogic(type: string, payload: any, pId: string) {
+    let room = this.authoritativeRoom;
+    if (!room) return;
+
+    if (type === 'clash-window') {
+      room.pendingAction = payload.pendingAction;
+      room.interruptStatus = { type: 'clash-window', endTime: Date.now() + 3000 };
+    } else if (type === 'shakny-window') {
+      room.interruptStatus = { type: 'shakny-window', endTime: Date.now() + 3000, rollDetails: payload.rollDetails };
+      room.shaknyModifiers = [];
+    }
+    this.broadcast(room);
+  }
+
+  private checkWinConditions(room: Room) {
+    for (const p of room.players) {
+      if (p.jail.length >= 3) {
+        room.status = 'finished';
+        room.winner = { id: p.id, name: p.name, color: p.color, condition: 'assura-capture', timestamp: Date.now() };
+        return;
+      }
+      const classes = new Set(p.sena.map(m => m.classSymbol).filter(Boolean));
+      if (classes.size >= 6) {
+        room.status = 'finished';
+        room.winner = { id: p.id, name: p.name, color: p.color, condition: 'class-completion', timestamp: Date.now() };
+        return;
+      }
+    }
+  }
+
+  private emitToLocal(event: string, data: any) {
+    if (this.listeners[event]) {
+      this.listeners[event].forEach(cb => cb(data));
+    }
+  }
+
+  public setLocalState(room: Room) {
+    this.authoritativeRoom = room;
+  }
+}
+
+export const socket = new GameSocketBridge();
