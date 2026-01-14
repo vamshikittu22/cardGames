@@ -1,9 +1,19 @@
 
-export type RoomStatus = 'waiting' | 'in-game';
+export type RoomStatus = 'waiting' | 'in-game' | 'finished';
 
 export type CardType = 'Major' | 'Astra' | 'Curse' | 'Maya' | 'Shakny' | 'Clash' | 'Assura' | 'General';
 
 export type PowerEffectType = 'draw' | 'kp' | 'protection' | 'damage' | 'none';
+
+export type WinCondition = 'assura-capture' | 'class-completion';
+
+export interface WinnerInfo {
+  id: string;
+  name: string;
+  color: string;
+  condition: WinCondition;
+  timestamp: number;
+}
 
 export interface GameCard {
   id: string;
@@ -102,6 +112,8 @@ export interface Room {
     clasherRoll?: number;
   };
   shaknyModifiers: { playerId: string; value: number; cardName: string }[];
+  // Phase 9 Victory State
+  winner?: WinnerInfo;
 }
 
 export type ViewState = 'landing' | 'lobby' | 'in-game';

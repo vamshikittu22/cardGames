@@ -51,7 +51,6 @@ const App: React.FC = () => {
       actionsUsedThisTurn: [],
       drawDeck: [],
       submergePile: [],
-      // Fix: Added missing shaknyModifiers initialization
       shaknyModifiers: []
     };
 
@@ -65,7 +64,6 @@ const App: React.FC = () => {
     const code = "LOCAL";
     const pId = generateId();
     
-    // Phase 4 & 7: Initialization
     const masterDeck = createMasterDeck();
     const assuraPool = createAssuraPool();
     const generals = shuffle(createGenerals());
@@ -96,7 +94,6 @@ const App: React.FC = () => {
 
     const players = [human, ...bots];
     
-    // Starting Hands: 1 General + 5 cards
     players.forEach((p, idx) => {
       const general = generals[idx % generals.length];
       const startingHand = masterDeck.splice(0, 5);
@@ -122,7 +119,6 @@ const App: React.FC = () => {
       actionsUsedThisTurn: [],
       drawDeck: masterDeck,
       submergePile: [],
-      // Fix: Added missing shaknyModifiers initialization
       shaknyModifiers: []
     };
 
@@ -198,7 +194,6 @@ const App: React.FC = () => {
           assuraReserve: assuraPool,
           drawDeck: masterDeck,
           submergePile: [],
-          // Fix: Ensure shaknyModifiers is reset on game start
           shaknyModifiers: []
         }
       };
@@ -209,6 +204,10 @@ const App: React.FC = () => {
 
   const updateRoomState = (room: Room) => {
     setRooms(prev => ({ ...prev, [room.roomCode]: room }));
+    // If the room just got reset to waiting, update view
+    if (room.status === 'waiting') {
+      setView('lobby');
+    }
   };
 
   const toggleReady = () => {
@@ -248,8 +247,8 @@ const App: React.FC = () => {
       {view === 'lobby' && currentRoomCode && rooms[currentRoomCode] && (
         <WaitingRoom room={rooms[currentRoomCode]} currentPlayerId={currentPlayerId!} onToggleReady={toggleReady} onSendMessage={handleSendMessage} onStartGame={startGame} onLeaveRoom={leaveRoom} />
       )}
-      {view === 'in-game' && currentRoomCode && rooms[currentRoomCode] && (
-        <Board room={rooms[currentRoomCode]} currentPlayerId={currentPlayerId!} onUpdateRoom={updateRoomState} />
+      {(view === 'in-game' || (currentRoomCode && rooms[currentRoomCode]?.status === 'finished')) && currentRoomCode && rooms[currentRoomCode] && (
+        <Board room={rooms[currentRoomCode]} currentPlayerId={currentPlayerId!} onUpdateRoom={updateRoomState} onLeaveRoom={leaveRoom} />
       )}
     </div>
   );
