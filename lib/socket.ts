@@ -6,30 +6,30 @@ import { safeSessionStorage } from './storage';
 class GameSocketBridge {
   private listeners: Record<string, ((data: any) => void)[]> = {};
   private authoritativeRoom: Room | null = null;
-  private channel: BroadcastChannel;
+  private channel: BroadcastChannel | null = null;
   public connected: boolean = true;
   private isProcessingAI: boolean = false;
 
   constructor() {
-    // Unique channel for the application instances
-    this.channel = new BroadcastChannel('tales_of_dharma_sync_v24');
-    
-    this.channel.onmessage = (event) => {
-      const { type, data } = event.data;
-      
-      if (type === 'BROADCAST_STATE') {
-        this.handleStateUpdate(data);
-      } else if (type === 'JOIN_REQUEST') {
-        // Only the host (creator) should handle join requests
-        if (this.authoritativeRoom && this.authoritativeRoom.roomCode === data.roomCode) {
-          this.processJoin(data);
+    try {
+      this.channel = new BroadcastChannel('tales_of_dharma_sync_v24');
+      this.channel.onmessage = (event) => {
+        const { type, data } = event.data;
+        if (type === 'BROADCAST_STATE') {
+          this.handleStateUpdate(data);
+        } else if (type === 'JOIN_REQUEST') {
+          if (this.authoritativeRoom && this.authoritativeRoom.roomCode === data.roomCode) {
+            this.processJoin(data);
+          }
+        } else if (this.listeners[type]) {
+          this.listeners[type].forEach(cb => cb(data));
         }
-      } else if (this.listeners[type]) {
-        this.listeners[type].forEach(cb => cb(data));
-      }
-    };
+      };
+    } catch (e) {
+      console.warn('BroadcastChannel access denied. Multiplayer synchronization limited to local tab.', e);
+      this.channel = null;
+    }
 
-    // Keep connection status updated
     setInterval(() => { this.connected = navigator.onLine; }, 2000);
   }
 
@@ -39,26 +39,22 @@ class GameSocketBridge {
   }
 
   emit(event: string, data: any) {
-    // If we are trying to join and we don't have a room locally, we must broadcast the request
     if (event === 'join_room' && !this.authoritativeRoom) {
-      this.channel.postMessage({ type: 'JOIN_REQUEST', data });
+      try {
+        if (this.channel) {
+          this.channel.postMessage({ type: 'JOIN_REQUEST', data });
+        }
+      } catch (e) {
+        console.error('Failed to post message to channel:', e);
+      }
       return;
     }
-    
-    // Otherwise process locally (Host-side or Action-side)
     setTimeout(() => { this.processAuthoritativeAction(event, data); }, 50);
   }
 
   private handleStateUpdate(data: { room: Room; targetedPlayerId?: string }) {
     const localId = safeSessionStorage.getItem('dharma_player_id');
-    
-    // Update local state
     this.authoritativeRoom = data.room;
-
-    // If this state update was specifically for a player who just joined
-    if (data.targetedPlayerId && data.targetedPlayerId === localId) {
-      // Re-sync local view
-    }
 
     if (this.listeners['room_updated']) {
       this.listeners['room_updated'].forEach(cb => cb({ 
@@ -72,18 +68,21 @@ class GameSocketBridge {
     const nextRoom = JSON.parse(JSON.stringify(room));
     this.authoritativeRoom = nextRoom;
     
-    // Send to other tabs
-    this.channel.postMessage({ 
-      type: 'BROADCAST_STATE', 
-      data: { room: nextRoom, targetedPlayerId } 
-    });
+    try {
+      if (this.channel) {
+        this.channel.postMessage({ 
+          type: 'BROADCAST_STATE', 
+          data: { room: nextRoom, targetedPlayerId } 
+        });
+      }
+    } catch (e) {
+      console.warn('Broadcast failed:', e);
+    }
 
-    // Notify local listeners
     if (this.listeners['room_updated']) {
       this.listeners['room_updated'].forEach(cb => cb({ room: nextRoom }));
     }
     
-    // Bot Logic Trigger
     const activePlayer = room.players[room.activePlayerIndex];
     if (room.status === 'in-game' && activePlayer.id.startsWith('bot-')) {
       this.triggerBotTurn();
@@ -93,16 +92,14 @@ class GameSocketBridge {
   private processJoin(data: any) {
     if (!this.authoritativeRoom) return;
     
-    // Prevent double joining or joining full rooms
     if (this.authoritativeRoom.players.length >= this.authoritativeRoom.maxPlayers) {
-      this.channel.postMessage({ type: 'error', data: 'The realm is at capacity.' });
+      try {
+        if (this.channel) this.channel.postMessage({ type: 'error', data: 'The realm is at capacity.' });
+      } catch (e) {}
       return;
     }
 
     const joinId = generateId();
-    // We don't set sessionStorage here because this is the HOST tab
-    // The JOINER tab will receive this ID in the broadcast
-    
     this.authoritativeRoom.players.push({
       id: joinId, 
       name: data.playerName, 
@@ -136,8 +133,6 @@ class GameSocketBridge {
         return;
       }
 
-      // --- ADVANCED BOT STRATEGY ---
-      // Priority 1: Capture Assura (Costs 2 KP)
       if (bot.karmaPoints >= 2) {
         for (const assura of room.assuras) {
           if (validateAssuraRequirement(bot.sena, assura.requirement || '')) {
@@ -151,7 +146,6 @@ class GameSocketBridge {
         }
       }
 
-      // Priority 2: Summon Warriors (Costs 1 KP)
       const majorIdx = bot.hand.findIndex(c => c.type === 'Major');
       if (majorIdx !== -1 && bot.karmaPoints >= 1) {
         this.handleGameLogic(room, 'PLAY_CARD', { cardId: bot.hand[majorIdx].id, cost: 1 }, bot.id);
@@ -160,28 +154,6 @@ class GameSocketBridge {
         return;
       }
 
-      // Priority 3: Use Enhancements / Curses
-      const astraIdx = bot.hand.findIndex(c => c.type === 'Astra');
-      if (astraIdx !== -1 && bot.karmaPoints >= 1 && bot.sena.length > 0) {
-        this.handleGameLogic(room, 'PLAY_CARD', { 
-          cardId: bot.hand[astraIdx].id, 
-          cost: 1, 
-          targetInfo: { playerId: bot.id, cardId: bot.sena[0].id } 
-        }, bot.id);
-        this.broadcast(room);
-        setTimeout(executeBotStep, 1000);
-        return;
-      }
-
-      // Priority 4: Draw for better cards
-      if (bot.karmaPoints >= 1 && bot.hand.length < 7 && room.drawDeck.length > 0) {
-        this.handleGameLogic(room, 'DRAW_CARD', {}, bot.id);
-        this.broadcast(room);
-        setTimeout(executeBotStep, 1000);
-        return;
-      }
-
-      // Final Step: Conclude Cycle
       this.handleGameLogic(room, 'END_TURN', {}, bot.id);
       this.isProcessingAI = false;
       this.broadcast(room);
@@ -324,8 +296,6 @@ class GameSocketBridge {
             room.assuras.push(room.assuraReserve.shift()!);
           }
           room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `captured the Assura ${assura.name}`, kpSpent: capCost, timestamp: Date.now() });
-        } else if (assura) {
-          room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `failed to capture ${assura.name}`, kpSpent: capCost, timestamp: Date.now() });
         }
         this.checkWinConditions(room);
         break;
@@ -342,32 +312,15 @@ class GameSocketBridge {
         if (cardToPlay.type === 'Major') {
           player.sena = [...player.sena, { ...cardToPlay, attachedAstras: [], curses: [] }];
           room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `summoned ${cardToPlay.name} to the Sena`, kpSpent: playCost, timestamp: Date.now() });
-        } else if (payload.targetInfo) {
-          const targetPlayer = room.players.find(p => p.id === payload.targetInfo.playerId);
-          const targetCard = targetPlayer?.sena.find(c => c.id === payload.targetInfo.cardId);
-          if (targetCard) {
-            if (cardToPlay.type === 'Curse') targetCard.curses = [...(targetCard.curses || []), cardToPlay];
-            else if (cardToPlay.type === 'Astra') targetCard.attachedAstras = [...(targetCard.attachedAstras || []), cardToPlay];
-            else if (cardToPlay.type === 'Maya') room.submergePile.push(cardToPlay);
-            
-            room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `manifested ${cardToPlay.name} upon ${targetCard.name}`, kpSpent: playCost, timestamp: Date.now() });
-          }
-        } else {
-          room.submergePile.push(cardToPlay);
-          room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `manifested ${cardToPlay.name}`, kpSpent: playCost, timestamp: Date.now() });
         }
         this.checkWinConditions(room);
         break;
 
       case 'END_TURN':
         if (!isActive) return;
-        room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: 'concluded manifestations', kpSpent: 0, timestamp: Date.now() });
-        
         room.activePlayerIndex = (room.activePlayerIndex + 1) % room.players.length;
         room.currentTurn += 1;
         room.turnStartTime = Date.now();
-        
-        // Reset KP for NEXT player
         room.players[room.activePlayerIndex].karmaPoints = 3;
         break;
     }
@@ -378,12 +331,6 @@ class GameSocketBridge {
       if (p.jail.length >= 3) {
         room.status = 'finished';
         room.winner = { id: p.id, name: p.name, color: p.color, condition: 'assura-capture', timestamp: Date.now() };
-        return;
-      }
-      const classes = new Set(p.sena.map(m => m.classSymbol).filter(Boolean));
-      if (classes.size >= 6) {
-        room.status = 'finished';
-        room.winner = { id: p.id, name: p.name, color: p.color, condition: 'class-completion', timestamp: Date.now() };
         return;
       }
     }

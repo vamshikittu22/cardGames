@@ -5,14 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tales of Dharma</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use a specific version of Tailwind to avoid production runtime warnings -->
+    <script src="https://cdn.tailwindcss.com/3.4.1"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        /* Base styles to ensure content visibility while Tailwind initializes */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #FAFAFA;
-            color: #1F2937;
+            background-color: #0F1117;
+            color: #FAFAFA;
             overflow: hidden;
+            margin: 0;
         }
 
         @keyframes pulse-subtle {
@@ -64,15 +67,15 @@
           z-index: 60;
         }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3"
-  }
-}
-</script>
+    <script type="importmap">
+    {
+      "imports": {
+        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+        "react/": "https://esm.sh/react@^19.2.3/",
+        "react": "https://esm.sh/react@^19.2.3"
+      }
+    }
+    </script>
 </head>
 <body>
     <div id="root"></div>

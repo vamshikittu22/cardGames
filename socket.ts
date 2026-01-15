@@ -1,6 +1,7 @@
 
 import { Room, Player, GameCard, ChatMessage, LogEntry, WinCondition } from './types';
 import { generateId, generateRoomCode, createMasterDeck, createAssuraPool, createGenerals, shuffle, validateAssuraRequirement } from './utils';
+import { safeSessionStorage } from './lib/storage';
 
 /**
  * GameSocketBridge emulates a WebSocket connection using BroadcastChannel.
@@ -9,19 +10,24 @@ import { generateId, generateRoomCode, createMasterDeck, createAssuraPool, creat
 class GameSocketBridge {
   private listeners: Record<string, ((data: any) => void)[]> = {};
   private authoritativeRoom: Room | null = null;
-  private channel: BroadcastChannel;
+  private channel: BroadcastChannel | null = null;
   public connected: boolean = true;
 
   constructor() {
-    this.channel = new BroadcastChannel('tales_of_dharma_sync');
-    this.channel.onmessage = (event) => {
-      const { type, data } = event.data;
-      if (type === 'BROADCAST_STATE') {
-        this.handleStateUpdate(data);
-      } else if (this.listeners[type]) {
-        this.listeners[type].forEach(cb => cb(data));
-      }
-    };
+    try {
+      this.channel = new BroadcastChannel('tales_of_dharma_sync');
+      this.channel.onmessage = (event) => {
+        const { type, data } = event.data;
+        if (type === 'BROADCAST_STATE') {
+          this.handleStateUpdate(data);
+        } else if (this.listeners[type]) {
+          this.listeners[type].forEach(cb => cb(data));
+        }
+      };
+    } catch (e) {
+      console.warn('BroadcastChannel access denied.', e);
+      this.channel = null;
+    }
 
     setInterval(() => {
       this.connected = navigator.onLine;
@@ -48,7 +54,11 @@ class GameSocketBridge {
 
   private broadcast(room: Room) {
     this.authoritativeRoom = room;
-    this.channel.postMessage({ type: 'BROADCAST_STATE', data: { room } });
+    try {
+      if (this.channel) {
+        this.channel.postMessage({ type: 'BROADCAST_STATE', data: { room } });
+      }
+    } catch (e) {}
     if (this.listeners['room_updated']) {
       this.listeners['room_updated'].forEach(cb => cb({ room }));
     }
@@ -61,6 +71,7 @@ class GameSocketBridge {
       case 'create_room':
         const code = generateRoomCode();
         const pId = generateId();
+        safeSessionStorage.setItem('dharma_player_id', pId);
         const newRoom: Room = {
           roomCode: code,
           roomName: data.roomName,
