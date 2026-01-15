@@ -1,6 +1,7 @@
 
 import { Room, Player, GameCard, ChatMessage, LogEntry, WinCondition } from '../types';
 import { generateId, generateRoomCode, createMasterDeck, createAssuraPool, createGenerals, shuffle, getRandomColor, validateAssuraRequirement } from '../utils';
+import { safeSessionStorage } from './storage';
 
 class GameSocketBridge {
   private listeners: Record<string, ((data: any) => void)[]> = {};
@@ -10,15 +11,25 @@ class GameSocketBridge {
   private isProcessingAI: boolean = false;
 
   constructor() {
-    this.channel = new BroadcastChannel('tales_of_dharma_auth_v23');
+    // Unique channel for the application instances
+    this.channel = new BroadcastChannel('tales_of_dharma_sync_v24');
+    
     this.channel.onmessage = (event) => {
       const { type, data } = event.data;
+      
       if (type === 'BROADCAST_STATE') {
         this.handleStateUpdate(data);
+      } else if (type === 'JOIN_REQUEST') {
+        // Only the host (creator) should handle join requests
+        if (this.authoritativeRoom && this.authoritativeRoom.roomCode === data.roomCode) {
+          this.processJoin(data);
+        }
       } else if (this.listeners[type]) {
         this.listeners[type].forEach(cb => cb(data));
       }
     };
+
+    // Keep connection status updated
     setInterval(() => { this.connected = navigator.onLine; }, 2000);
   }
 
@@ -28,30 +39,84 @@ class GameSocketBridge {
   }
 
   emit(event: string, data: any) {
-    // Artificial latency for realism
-    setTimeout(() => { this.processAuthoritativeAction(event, data); }, 100);
+    // If we are trying to join and we don't have a room locally, we must broadcast the request
+    if (event === 'join_room' && !this.authoritativeRoom) {
+      this.channel.postMessage({ type: 'JOIN_REQUEST', data });
+      return;
+    }
+    
+    // Otherwise process locally (Host-side or Action-side)
+    setTimeout(() => { this.processAuthoritativeAction(event, data); }, 50);
   }
 
-  private handleStateUpdate(data: { room: Room }) {
+  private handleStateUpdate(data: { room: Room; targetedPlayerId?: string }) {
+    const localId = safeSessionStorage.getItem('dharma_player_id');
+    
+    // Update local state
     this.authoritativeRoom = data.room;
+
+    // If this state update was specifically for a player who just joined
+    if (data.targetedPlayerId && data.targetedPlayerId === localId) {
+      // Re-sync local view
+    }
+
     if (this.listeners['room_updated']) {
-      this.listeners['room_updated'].forEach(cb => cb({ room: data.room }));
+      this.listeners['room_updated'].forEach(cb => cb({ 
+        room: data.room, 
+        currentPlayerId: data.targetedPlayerId === localId ? localId : undefined 
+      }));
     }
   }
 
-  private broadcast(room: Room) {
+  private broadcast(room: Room, targetedPlayerId?: string) {
     const nextRoom = JSON.parse(JSON.stringify(room));
     this.authoritativeRoom = nextRoom;
-    this.channel.postMessage({ type: 'BROADCAST_STATE', data: { room: nextRoom } });
+    
+    // Send to other tabs
+    this.channel.postMessage({ 
+      type: 'BROADCAST_STATE', 
+      data: { room: nextRoom, targetedPlayerId } 
+    });
+
+    // Notify local listeners
     if (this.listeners['room_updated']) {
       this.listeners['room_updated'].forEach(cb => cb({ room: nextRoom }));
     }
     
-    // Trigger Bot AI if it's their turn
+    // Bot Logic Trigger
     const activePlayer = room.players[room.activePlayerIndex];
     if (room.status === 'in-game' && activePlayer.id.startsWith('bot-')) {
       this.triggerBotTurn();
     }
+  }
+
+  private processJoin(data: any) {
+    if (!this.authoritativeRoom) return;
+    
+    // Prevent double joining or joining full rooms
+    if (this.authoritativeRoom.players.length >= this.authoritativeRoom.maxPlayers) {
+      this.channel.postMessage({ type: 'error', data: 'The realm is at capacity.' });
+      return;
+    }
+
+    const joinId = generateId();
+    // We don't set sessionStorage here because this is the HOST tab
+    // The JOINER tab will receive this ID in the broadcast
+    
+    this.authoritativeRoom.players.push({
+      id: joinId, 
+      name: data.playerName, 
+      color: data.color, 
+      isReady: false, 
+      isCreator: false, 
+      isConnected: true,
+      karmaPoints: 0, 
+      hand: [], 
+      sena: [], 
+      jail: []
+    });
+
+    this.broadcast(this.authoritativeRoom, joinId);
   }
 
   private triggerBotTurn() {
@@ -71,8 +136,8 @@ class GameSocketBridge {
         return;
       }
 
-      // --- BOT STRATEGY LOOP ---
-      // 1. Can we capture an Assura?
+      // --- ADVANCED BOT STRATEGY ---
+      // Priority 1: Capture Assura (Costs 2 KP)
       if (bot.karmaPoints >= 2) {
         for (const assura of room.assuras) {
           if (validateAssuraRequirement(bot.sena, assura.requirement || '')) {
@@ -86,7 +151,7 @@ class GameSocketBridge {
         }
       }
 
-      // 2. Can we play a Major?
+      // Priority 2: Summon Warriors (Costs 1 KP)
       const majorIdx = bot.hand.findIndex(c => c.type === 'Major');
       if (majorIdx !== -1 && bot.karmaPoints >= 1) {
         this.handleGameLogic(room, 'PLAY_CARD', { cardId: bot.hand[majorIdx].id, cost: 1 }, bot.id);
@@ -95,7 +160,7 @@ class GameSocketBridge {
         return;
       }
 
-      // 3. Can we play an Astra or Curse? (Simplified AI: target randomly)
+      // Priority 3: Use Enhancements / Curses
       const astraIdx = bot.hand.findIndex(c => c.type === 'Astra');
       if (astraIdx !== -1 && bot.karmaPoints >= 1 && bot.sena.length > 0) {
         this.handleGameLogic(room, 'PLAY_CARD', { 
@@ -108,7 +173,7 @@ class GameSocketBridge {
         return;
       }
 
-      // 4. Draw if nothing else and have KP
+      // Priority 4: Draw for better cards
       if (bot.karmaPoints >= 1 && bot.hand.length < 7 && room.drawDeck.length > 0) {
         this.handleGameLogic(room, 'DRAW_CARD', {}, bot.id);
         this.broadcast(room);
@@ -116,7 +181,7 @@ class GameSocketBridge {
         return;
       }
 
-      // 5. Out of KP or logical moves -> END TURN
+      // Final Step: Conclude Cycle
       this.handleGameLogic(room, 'END_TURN', {}, bot.id);
       this.isProcessingAI = false;
       this.broadcast(room);
@@ -132,17 +197,31 @@ class GameSocketBridge {
       case 'create_room':
         const code = generateRoomCode();
         const pId = generateId();
-        sessionStorage.setItem('dharma_player_id', pId);
+        safeSessionStorage.setItem('dharma_player_id', pId);
+        
         const newRoom: Room = {
-          roomCode: code, roomName: data.roomName, maxPlayers: data.maxPlayers,
+          roomCode: code, 
+          roomName: data.roomName, 
+          maxPlayers: data.maxPlayers,
           players: [{
             id: pId, name: data.playerName, color: data.color, isReady: false, isCreator: true, isConnected: true,
             karmaPoints: 3, hand: [], sena: [], jail: []
           }],
-          status: 'waiting', createdAt: Date.now(), messages: [], currentTurn: 1, turnStartTime: Date.now(),
-          activePlayerIndex: 0, assuras: [], assuraReserve: [], gameLogs: [], actionsUsedThisTurn: [],
-          drawDeck: [], submergePile: [], shaknyModifiers: []
+          status: 'waiting', 
+          createdAt: Date.now(), 
+          messages: [], 
+          currentTurn: 1, 
+          turnStartTime: Date.now(),
+          activePlayerIndex: 0, 
+          assuras: [], 
+          assuraReserve: [], 
+          gameLogs: [], 
+          actionsUsedThisTurn: [],
+          drawDeck: [], 
+          submergePile: [], 
+          shaknyModifiers: []
         };
+
         if (data.isSinglePlayer) {
           const names = ['Agni Bot', 'Varuna Bot', 'Soma Bot'];
           for (let i = 0; i < data.maxPlayers - 1; i++) {
@@ -153,19 +232,8 @@ class GameSocketBridge {
           }
           this.initializeGame(newRoom);
         }
-        this.broadcast(newRoom);
-        break;
-
-      case 'join_room':
-        if (room && room.roomCode === data.roomCode) {
-          const joinId = generateId();
-          sessionStorage.setItem('dharma_player_id', joinId);
-          room.players.push({
-            id: joinId, name: data.playerName, color: data.color, isReady: false, isCreator: false, isConnected: true,
-            karmaPoints: 0, hand: [], sena: [], jail: []
-          });
-          this.broadcast(room);
-        }
+        
+        this.broadcast(newRoom, pId);
         break;
 
       case 'game_action':
@@ -174,7 +242,13 @@ class GameSocketBridge {
         break;
 
       case 'chat_message':
-        room.messages.push({ id: generateId(), playerId: data.playerId, playerName: data.playerName, text: data.text, timestamp: Date.now() });
+        room.messages.push({ 
+          id: generateId(), 
+          playerId: data.playerId, 
+          playerName: data.playerName, 
+          text: data.text, 
+          timestamp: Date.now() 
+        });
         this.broadcast(room);
         break;
 
@@ -190,6 +264,7 @@ class GameSocketBridge {
 
       case 'reset_room':
         room.status = 'waiting';
+        room.winner = undefined;
         room.players = room.players.map(p => ({ ...p, isReady: false, hand: [], sena: [], jail: [] }));
         room.currentTurn = 1;
         this.broadcast(room);
@@ -201,10 +276,16 @@ class GameSocketBridge {
     const deck = createMasterDeck();
     const assuras = createAssuraPool();
     const generals = shuffle(createGenerals());
+    
     room.players = room.players.map((p, i) => ({
-      ...p, hand: [generals[i % generals.length], ...deck.splice(0, 5)],
-      karmaPoints: i === 0 ? 3 : 0, isReady: true, sena: [], jail: []
+      ...p, 
+      hand: [generals[i % generals.length], ...deck.splice(0, 5)],
+      karmaPoints: i === 0 ? 3 : 0, 
+      isReady: true, 
+      sena: [], 
+      jail: []
     }));
+    
     room.status = 'in-game';
     room.drawDeck = deck;
     room.assuras = assuras.splice(0, 3);
@@ -267,10 +348,8 @@ class GameSocketBridge {
           if (targetCard) {
             if (cardToPlay.type === 'Curse') targetCard.curses = [...(targetCard.curses || []), cardToPlay];
             else if (cardToPlay.type === 'Astra') targetCard.attachedAstras = [...(targetCard.attachedAstras || []), cardToPlay];
-            else if (cardToPlay.type === 'Maya') {
-              room.submergePile.push(cardToPlay);
-              // Maya effect logic can be expanded here
-            }
+            else if (cardToPlay.type === 'Maya') room.submergePile.push(cardToPlay);
+            
             room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `manifested ${cardToPlay.name} upon ${targetCard.name}`, kpSpent: playCost, timestamp: Date.now() });
           }
         } else {
@@ -284,7 +363,6 @@ class GameSocketBridge {
         if (!isActive) return;
         room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: 'concluded manifestations', kpSpent: 0, timestamp: Date.now() });
         
-        // Advance Turn
         room.activePlayerIndex = (room.activePlayerIndex + 1) % room.players.length;
         room.currentTurn += 1;
         room.turnStartTime = Date.now();
@@ -311,4 +389,5 @@ class GameSocketBridge {
     }
   }
 }
+
 export const socket = new GameSocketBridge();

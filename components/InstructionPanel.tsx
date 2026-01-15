@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { GameCard, TargetingMode } from '../types';
+import { safeLocalStorage } from '../lib/storage';
 
 interface InstructionPanelProps {
   isMyTurn: boolean;
@@ -11,12 +12,12 @@ interface InstructionPanelProps {
 
 export const InstructionPanel: React.FC<InstructionPanelProps> = ({ isMyTurn, activePlayerName, targetingMode, selectedCard }) => {
   const [visible, setVisible] = useState(() => {
-    const saved = localStorage.getItem('dharma_instructor_visible');
+    const saved = safeLocalStorage.getItem('dharma_instructor_visible');
     return saved === null ? true : saved === 'true';
   });
 
   useEffect(() => {
-    localStorage.setItem('dharma_instructor_visible', String(visible));
+    safeLocalStorage.setItem('dharma_instructor_visible', String(visible));
   }, [visible]);
 
   const getHint = () => {

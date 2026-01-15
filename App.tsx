@@ -7,11 +7,12 @@ import { Board } from './components/Board';
 import { Room, ViewState, Player, ChatMessage } from './types';
 import { getRandomColor, generateId } from './utils';
 import { socket } from './lib/socket';
+import { safeSessionStorage } from './lib/storage';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState | 'creating' | 'joining' | 'single-player'>('landing');
   const [room, setRoom] = useState<Room | null>(null);
-  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(() => sessionStorage.getItem('dharma_player_id'));
+  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(() => safeSessionStorage.getItem('dharma_player_id'));
   const [error, setError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSinglePlayerMode, setIsSinglePlayerMode] = useState(false);
@@ -21,10 +22,10 @@ const App: React.FC = () => {
     socket.on('room_updated', (data: { room: Room; currentPlayerId?: string }) => {
       setRoom(data.room);
       
-      const authoritativeId = data.currentPlayerId || sessionStorage.getItem('dharma_player_id');
+      const authoritativeId = data.currentPlayerId || safeSessionStorage.getItem('dharma_player_id');
       if (authoritativeId) {
         setCurrentPlayerId(authoritativeId);
-        sessionStorage.setItem('dharma_player_id', authoritativeId);
+        safeSessionStorage.setItem('dharma_player_id', authoritativeId);
       }
       
       setIsSyncing(false);
@@ -81,7 +82,7 @@ const App: React.FC = () => {
   const leaveRoom = () => {
     setRoom(null);
     setCurrentPlayerId(null);
-    sessionStorage.removeItem('dharma_player_id');
+    safeSessionStorage.removeItem('dharma_player_id');
     setIsSinglePlayerMode(false);
     setView('landing');
   };
