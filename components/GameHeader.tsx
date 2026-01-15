@@ -7,9 +7,11 @@ interface GameHeaderProps {
   turnNumber: number;
   activePlayer: Player;
   turnStartTime: number;
+  // Added onLeave to fix type error in Board.tsx
+  onLeave?: () => void;
 }
 
-export const GameHeader: React.FC<GameHeaderProps> = ({ turnNumber, activePlayer, turnStartTime }) => {
+export const GameHeader: React.FC<GameHeaderProps> = ({ turnNumber, activePlayer, turnStartTime, onLeave }) => {
   const [seconds, setSeconds] = useState(0);
   const [isConnected, setIsConnected] = useState(socket.connected);
 
@@ -68,7 +70,11 @@ export const GameHeader: React.FC<GameHeaderProps> = ({ turnNumber, activePlayer
       </div>
 
       <div className="flex items-center gap-6 pointer-events-auto">
-        <button className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-500/20 hover:border-red-500/40 transition-all">
+        {/* Hooked up onLeave to the button */}
+        <button 
+          onClick={onLeave}
+          className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-500/20 hover:border-red-500/40 transition-all"
+        >
           Leave Realm
         </button>
       </div>

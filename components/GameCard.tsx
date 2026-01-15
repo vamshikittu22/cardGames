@@ -24,7 +24,7 @@ export const GameCard: React.FC<CardProps> = ({
   isTargetable = false,
   onClick
 }) => {
-  const theme = CARD_THEMES[card.type] || CARD_THEMES.General;
+  const theme = isBack ? { bg: '#111827', text: 'white' } : (CARD_THEMES[card?.type] || CARD_THEMES.General);
   
   const dimensions = {
     xs: 'w-12 h-16',
@@ -40,7 +40,7 @@ export const GameCard: React.FC<CardProps> = ({
     lg: 'p-4'
   };
 
-  if (isBack) {
+  if (isBack || !card) {
     return (
       <div className={`${dimensions[size]} bg-[#111827] rounded-lg border-2 border-white/10 flex items-center justify-center relative overflow-hidden group shadow-xl ${className}`}>
         <div 
@@ -60,7 +60,7 @@ export const GameCard: React.FC<CardProps> = ({
   const astraCount = card.attachedAstras?.length || 0;
 
   return (
-    <div className="relative group/card" onClick={onClick}>
+    <div className={`relative group/card ${isHeld ? 'z-50' : ''}`} onClick={onClick}>
       {/* Astra Stacking Offset Visuals */}
       {card.attachedAstras?.slice(0, 3).map((_, i) => (
         <div 
@@ -77,11 +77,16 @@ export const GameCard: React.FC<CardProps> = ({
         ${dimensions[size]} ${theme.bg} ${theme.text} 
         rounded-lg border-2 border-white/20 flex flex-col ${contentPadding[size]} shadow-2xl relative
         ${isInteractive ? `hover:z-50 ${UI_TRANSITIONS} cursor-pointer` : ''}
-        ${isHeld ? '-translate-y-6 scale-110 shadow-[0_20px_50px_rgba(0,0,0,0.5)]' : ''}
+        ${isHeld ? 'card-selected-glow ring-4 ring-[#F59E0B]' : 'hover:-translate-y-2'}
         ${isTargetable ? 'ring-4 ring-yellow-400 animate-pulse-subtle scale-105 cursor-crosshair shadow-[0_0_30px_rgba(250,204,21,0.5)]' : ''}
         ${hasCurse ? 'grayscale-[0.5] sepia-[0.3]' : ''}
         ${className}
       `}>
+        {/* Selection Glow for Active Card */}
+        {isHeld && (
+          <div className="absolute -inset-1 bg-yellow-500/30 rounded-lg blur-md -z-10 animate-pulse"></div>
+        )}
+
         {/* Curse Badge */}
         {hasCurse && (
           <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center border-2 border-white shadow-lg z-20 animate-bounce">
@@ -123,22 +128,18 @@ export const GameCard: React.FC<CardProps> = ({
           {card.type === 'Assura' ? (
             <div className="space-y-0.5">
               <div className="bg-black/40 px-1 py-0.5 rounded flex justify-between items-center">
-                <span className="text-[6px] uppercase font-bold text-white/50">Requirement</span>
+                <span className="text-[6px] uppercase font-bold text-white/50">Req</span>
                 <span className="text-[7px] font-black">{card.requirement || 'None'}</span>
               </div>
               <div className="grid grid-cols-1 gap-0.5">
                 <div className="bg-green-900/40 px-1 py-0.5 rounded flex justify-between items-center border border-green-500/20">
-                  <span className="text-[6px] uppercase font-bold text-green-200">Capture</span>
+                  <span className="text-[6px] uppercase font-bold text-green-200">Cap</span>
                   <span className="text-[8px] font-black">{card.captureRange?.[0]}-{card.captureRange?.[1]}</span>
-                </div>
-                <div className="bg-red-900/40 px-1 py-0.5 rounded flex justify-between items-center border border-red-500/20">
-                  <span className="text-[6px] uppercase font-bold text-red-200">Retaliate</span>
-                  <span className="text-[8px] font-black">{card.retaliationRange?.[0]}-{card.retaliationRange?.[1]}</span>
                 </div>
               </div>
             </div>
           ) : (
-            <p className="text-[8px] leading-none font-medium opacity-80 text-justify">
+            <p className="text-[8px] leading-tight font-medium opacity-80 text-justify line-clamp-3">
               {card.description}
             </p>
           )}

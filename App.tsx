@@ -11,7 +11,7 @@ import { socket } from './lib/socket';
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState | 'creating' | 'joining' | 'single-player'>('landing');
   const [room, setRoom] = useState<Room | null>(null);
-  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
+  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(() => sessionStorage.getItem('dharma_player_id'));
   const [error, setError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSinglePlayerMode, setIsSinglePlayerMode] = useState(false);
@@ -20,14 +20,16 @@ const App: React.FC = () => {
     // Listen for authoritative state updates from the socket bridge
     socket.on('room_updated', (data: { room: Room; currentPlayerId?: string }) => {
       setRoom(data.room);
-      if (data.currentPlayerId) setCurrentPlayerId(data.currentPlayerId);
+      if (data.currentPlayerId) {
+        setCurrentPlayerId(data.currentPlayerId);
+        sessionStorage.setItem('dharma_player_id', data.currentPlayerId);
+      }
       setIsSyncing(false);
       
       // Auto-transition view based on room status
       if (data.room.status === 'in-game') {
         setView('in-game');
       } else if (data.room.status === 'waiting' && !isSinglePlayerMode) {
-        // Only go to lobby if we are NOT in single player mode
         if (view === 'landing' || view === 'creating' || view === 'joining') {
           setView('lobby');
         }
@@ -60,7 +62,6 @@ const App: React.FC = () => {
       color: getRandomColor()
     });
     
-    // Simulate lookup timeout for error display
     setTimeout(() => {
       if (!room && view === 'joining') {
         setError("Joining failed. Room not found in this dharma plane.");
@@ -72,7 +73,6 @@ const App: React.FC = () => {
   const handleSinglePlayer = (data: { roomName: string; maxPlayers: number; playerName: string }) => {
     setIsSyncing(true);
     setIsSinglePlayerMode(true);
-    // Create a room that immediately initializes the game
     socket.emit('create_room', { 
       ...data, 
       color: getRandomColor(),
@@ -106,13 +106,13 @@ const App: React.FC = () => {
   const leaveRoom = () => {
     setRoom(null);
     setCurrentPlayerId(null);
+    sessionStorage.removeItem('dharma_player_id');
     setIsSinglePlayerMode(false);
     setView('landing');
   };
 
   return (
     <div className="min-h-screen text-[#1F2937]">
-      {/* Synchronization Overlay */}
       {isSyncing && (
         <div className="fixed inset-0 z-[1000] bg-white/40 backdrop-blur-[4px] flex flex-col items-center justify-center cursor-wait">
            <div className="bg-black text-white px-8 py-4 rounded-full font-black uppercase text-[10px] tracking-[0.5em] animate-pulse shadow-2xl border border-white/20 mb-4">
@@ -172,5 +172,4 @@ const App: React.FC = () => {
   );
 };
 
-// Fix: Added missing default export for App component
 export default App;

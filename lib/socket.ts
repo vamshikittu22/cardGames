@@ -1,20 +1,19 @@
 
 import { Room, Player, GameCard, ChatMessage, LogEntry, WinCondition } from '../types';
-import { generateId, generateRoomCode, createMasterDeck, createAssuraPool, createGenerals, shuffle, validateAssuraRequirement } from '../utils';
+import { generateId, generateRoomCode, createMasterDeck, createAssuraPool, createGenerals, shuffle, getRandomColor } from '../utils';
 
 /**
- * GameSocketBridge emulates a WebSocket connection using BroadcastChannel.
- * This acts as the single source of truth for the game state across all tabs.
+ * GameSocketBridge: The authoritative game engine running via BroadcastChannel.
+ * Populates single-player rooms with AI bots to ensure gameplay features (like Curses) work.
  */
 class GameSocketBridge {
   private listeners: Record<string, ((data: any) => void)[]> = {};
   private authoritativeRoom: Room | null = null;
   private channel: BroadcastChannel;
   public connected: boolean = true;
-  private syncTimer: any;
 
   constructor() {
-    this.channel = new BroadcastChannel('tales_of_dharma_sync');
+    this.channel = new BroadcastChannel('tales_of_dharma_final_v9');
     this.channel.onmessage = (event) => {
       const { type, data } = event.data;
       if (type === 'BROADCAST_STATE') {
@@ -24,7 +23,6 @@ class GameSocketBridge {
       }
     };
 
-    // Heartbeat simulation
     setInterval(() => {
       this.connected = navigator.onLine;
     }, 2000);
@@ -36,10 +34,9 @@ class GameSocketBridge {
   }
 
   emit(event: string, data: any) {
-    // Simulate slight network latency for a realistic feel
     setTimeout(() => {
       this.processAuthoritativeAction(event, data);
-    }, 120);
+    }, 50);
   }
 
   private handleStateUpdate(data: { room: Room }) {
@@ -50,25 +47,25 @@ class GameSocketBridge {
   }
 
   private broadcast(room: Room) {
-    this.authoritativeRoom = room;
-    this.channel.postMessage({ type: 'BROADCAST_STATE', data: { room } });
-    // Local tab notification
+    const nextRoom = JSON.parse(JSON.stringify(room));
+    this.authoritativeRoom = nextRoom;
+    this.channel.postMessage({ type: 'BROADCAST_STATE', data: { room: nextRoom } });
     if (this.listeners['room_updated']) {
-      this.listeners['room_updated'].forEach(cb => cb({ room }));
+      this.listeners['room_updated'].forEach(cb => cb({ room: nextRoom }));
     }
   }
 
-  /**
-   * AUTHORITATIVE SERVER LOGIC
-   * Validates and processes all actions.
-   */
   private processAuthoritativeAction(event: string, data: any) {
-    let room = this.authoritativeRoom;
+    if (!this.authoritativeRoom && event !== 'create_room') return;
+    
+    let room: Room = this.authoritativeRoom ? JSON.parse(JSON.stringify(this.authoritativeRoom)) : {} as Room;
 
     switch (event) {
       case 'create_room':
         const code = generateRoomCode();
         const pId = generateId();
+        sessionStorage.setItem('dharma_player_id', pId);
+        
         const newRoom: Room = {
           roomCode: code,
           roomName: data.roomName,
@@ -99,24 +96,42 @@ class GameSocketBridge {
           submergePile: [],
           shaknyModifiers: []
         };
-        // If single player mode, initialize game immediately
+
         if (data.isSinglePlayer) {
+          // Add AI Bots (Guardians) to fill the room
+          const botNames = ['Dharma Guardian', 'Ancient Seeker', 'Ethereal Monk', 'Celestial Scribe', 'Silent Warrior'];
+          const botsNeeded = data.maxPlayers - 1;
+          for (let i = 0; i < botsNeeded; i++) {
+            newRoom.players.push({
+              id: `bot-${generateId()}`,
+              name: botNames[i % botNames.length],
+              color: getRandomColor(),
+              isReady: true,
+              isCreator: false,
+              isConnected: true,
+              karmaPoints: 3,
+              hand: [],
+              sena: [],
+              jail: []
+            });
+          }
           this.initializeGame(newRoom);
         }
-        
+
+        this.broadcast(newRoom);
         if (this.listeners['room_updated']) {
           this.listeners['room_updated'].forEach(cb => cb({ room: newRoom, currentPlayerId: pId }));
         }
-        this.broadcast(newRoom);
         break;
 
       case 'join_room':
-        if (room && room.roomCode === data.roomCode) {
+        if (room.roomCode === data.roomCode) {
           if (room.players.length >= room.maxPlayers) {
             this.emitToLocal('error', 'The realm is full.');
             return;
           }
           const joinId = generateId();
+          sessionStorage.setItem('dharma_player_id', joinId);
           room.players.push({
             id: joinId,
             name: data.playerName,
@@ -129,50 +144,41 @@ class GameSocketBridge {
             sena: [],
             jail: []
           });
+          this.broadcast(room);
           if (this.listeners['room_updated']) {
             this.listeners['room_updated'].forEach(cb => cb({ room, currentPlayerId: joinId }));
           }
-          this.broadcast(room);
         } else {
           this.emitToLocal('error', 'Room not found.');
         }
         break;
 
       case 'toggle_ready':
-        if (!room) return;
         room.players = room.players.map(p => p.id === data.playerId ? { ...p, isReady: !p.isReady } : p);
         this.broadcast(room);
         break;
 
-      case 'chat_message':
-        if (!room) return;
-        const msg: ChatMessage = {
-          id: generateId(),
-          playerId: data.playerId,
-          playerName: data.playerName,
-          text: data.text,
-          timestamp: Date.now()
-        };
-        room.messages = [...room.messages, msg];
-        this.broadcast(room);
-        break;
-
       case 'start_game':
-        if (!room) return;
         this.initializeGame(room);
         this.broadcast(room);
         break;
 
       case 'game_action':
-        this.handleGameLogic(data.actionType, data.payload, data.playerId);
+        this.handleGameLogic(room, data.actionType, data.payload, data.playerId);
         break;
 
-      case 'interrupt_action':
-        this.handleInterruptLogic(data.type, data.payload, data.playerId);
+      case 'chat_message':
+        room.messages.push({
+          id: generateId(),
+          playerId: data.playerId,
+          playerName: data.playerName,
+          text: data.text,
+          timestamp: Date.now()
+        });
+        this.broadcast(room);
         break;
 
       case 'reset_room':
-        if (!room) return;
         room.status = 'waiting';
         room.winner = undefined;
         room.players = room.players.map(p => ({ ...p, isReady: false, hand: [], sena: [], jail: [] }));
@@ -187,14 +193,14 @@ class GameSocketBridge {
     const deck = createMasterDeck();
     const assuras = createAssuraPool();
     const generals = shuffle(createGenerals());
-    
     room.players = room.players.map((p, i) => ({
       ...p,
       hand: [generals[i % generals.length], ...deck.splice(0, 5)],
       karmaPoints: 3,
-      isReady: true // Auto-ready for start
+      isReady: true,
+      sena: [],
+      jail: []
     }));
-    
     room.status = 'in-game';
     room.drawDeck = deck;
     room.assuras = assuras.splice(0, 3);
@@ -203,90 +209,94 @@ class GameSocketBridge {
     room.turnStartTime = Date.now();
   }
 
-  private handleGameLogic(type: string, payload: any, pId: string) {
-    let room = this.authoritativeRoom;
-    if (!room) return;
-    const player = room.players.find(p => p.id === pId);
-    if (!player) return;
-
-    const activePlayer = room.players[room.activePlayerIndex];
-    const isTurn = activePlayer.id === pId;
+  private handleGameLogic(room: Room, type: string, payload: any, pId: string) {
+    const playerIndex = room.players.findIndex(p => p.id === pId);
+    if (playerIndex === -1) return;
+    const player = room.players[playerIndex];
+    const isActive = room.activePlayerIndex === playerIndex;
 
     switch (type) {
       case 'DRAW_CARD':
-        if (!isTurn || player.karmaPoints < 1) return;
-        if (room.drawDeck.length === 0) {
-          if (room.submergePile.length === 0) return;
-          room.drawDeck = shuffle(room.submergePile);
-          room.submergePile = [];
+        if (!isActive || player.karmaPoints < 1) return;
+        const card = room.drawDeck.shift();
+        if (card) {
+          player.hand.push(card);
+          player.karmaPoints -= 1;
+          room.gameLogs.push({ 
+            id: generateId(), turn: room.currentTurn, playerName: player.name, 
+            action: 'drew a card from the Cosmos', kpSpent: 1, timestamp: Date.now() 
+          });
         }
-        const card = room.drawDeck.shift()!;
-        player.hand.push(card);
-        player.karmaPoints -= 1;
-        room.gameLogs.push({ 
-          id: generateId(), turn: room.currentTurn, playerName: player.name, 
-          action: 'drew a card from the Cosmos', kpSpent: 1, timestamp: Date.now() 
-        });
         break;
 
       case 'PLAY_CARD':
         const cost = payload.cost || 0;
-        if (player.karmaPoints < cost) return;
+        if (!isActive || player.karmaPoints < cost) return;
         const cardIdx = player.hand.findIndex(c => c.id === payload.cardId);
         if (cardIdx === -1) return;
-        const playedCard = player.hand.splice(cardIdx, 1)[0];
+        const played = player.hand.splice(cardIdx, 1)[0];
         player.karmaPoints -= cost;
 
-        if (playedCard.type === 'Major') {
-          player.sena.push(playedCard);
+        if (played.type === 'Major') {
+          player.sena = [...player.sena, played];
+          room.gameLogs.push({ 
+            id: generateId(), turn: room.currentTurn, playerName: player.name, 
+            action: `deployed ${played.name} to the Sena Forces`, kpSpent: cost, timestamp: Date.now() 
+          });
+        } else if (payload.targetInfo) {
+           const targetPlayer = room.players.find(p => p.id === payload.targetInfo.playerId);
+           const targetCard = targetPlayer?.sena.find(c => c.id === payload.targetInfo.cardId);
+           if (targetCard) {
+             if (played.type === 'Astra') targetCard.attachedAstras = [...targetCard.attachedAstras, played];
+             if (played.type === 'Curse') targetCard.curses = [...targetCard.curses, played];
+             room.gameLogs.push({ 
+               id: generateId(), turn: room.currentTurn, playerName: player.name, 
+               action: `played ${played.name} on ${targetCard.name}`, kpSpent: cost, timestamp: Date.now() 
+             });
+           }
         } else {
-          room.submergePile.push(playedCard);
+          room.submergePile.push(played);
         }
-
-        room.gameLogs.push({ 
-          id: generateId(), turn: room.currentTurn, playerName: player.name, 
-          action: `played ${playedCard.name}`, kpSpent: cost, timestamp: Date.now() 
-        });
         this.checkWinConditions(room);
         break;
 
       case 'END_TURN':
-        if (!isTurn) return;
+        if (!isActive) return;
+        room.gameLogs.push({ 
+          id: generateId(), turn: room.currentTurn, playerName: player.name, 
+          action: 'concluded their turn', kpSpent: 0, timestamp: Date.now() 
+        });
+
         room.activePlayerIndex = (room.activePlayerIndex + 1) % room.players.length;
         room.currentTurn += 1;
         room.turnStartTime = Date.now();
-        room.actionsUsedThisTurn = [];
-        room.players.forEach((p, idx) => {
-          if (idx === room.activePlayerIndex) p.karmaPoints = Math.min(10, p.karmaPoints + 3);
-          p.sena.forEach(m => m.invokedThisTurn = false);
-        });
+        
+        const nextPlayer = room.players[room.activePlayerIndex];
+        nextPlayer.karmaPoints = Math.min(10, nextPlayer.karmaPoints + 3);
+        
+        room.players.forEach(p => p.sena.forEach(m => m.invokedThisTurn = false));
         break;
 
-      case 'DICE_ROLL_REQUEST':
-        // Authoritative dice roll
-        const die1 = Math.floor(Math.random() * 6) + 1;
-        const die2 = Math.floor(Math.random() * 6) + 1;
-        const total = die1 + die2;
-        // Broadcast the result after a simulation delay
-        setTimeout(() => {
-          this.emitToLocal('dice_rolled', { result: total, die1, die2, payload });
-        }, 1500);
+      case 'CAPTURE_RESULT':
+        const assura = room.assuras.find(a => a.id === payload.cardId);
+        if (payload.isCaptured && assura) {
+           player.jail.push(assura);
+           room.assuras = room.assuras.filter(a => a.id !== payload.cardId);
+           if (room.assuraReserve.length > 0) room.assuras.push(room.assuraReserve.shift()!);
+           player.karmaPoints -= 2;
+           room.gameLogs.push({ 
+             id: generateId(), turn: room.currentTurn, playerName: player.name, 
+             action: `captured ${assura.name}!`, kpSpent: 2, timestamp: Date.now() 
+           });
+        } else {
+           player.karmaPoints -= 2;
+           room.gameLogs.push({ 
+             id: generateId(), turn: room.currentTurn, playerName: player.name, 
+             action: `failed to capture ${assura?.name || 'Assura'}`, kpSpent: 2, timestamp: Date.now() 
+           });
+        }
+        this.checkWinConditions(room);
         break;
-    }
-
-    this.broadcast(room);
-  }
-
-  private handleInterruptLogic(type: string, payload: any, pId: string) {
-    let room = this.authoritativeRoom;
-    if (!room) return;
-
-    if (type === 'clash-window') {
-      room.pendingAction = payload.pendingAction;
-      room.interruptStatus = { type: 'clash-window', endTime: Date.now() + 3000 };
-    } else if (type === 'shakny-window') {
-      room.interruptStatus = { type: 'shakny-window', endTime: Date.now() + 3000, rollDetails: payload.rollDetails };
-      room.shaknyModifiers = [];
     }
     this.broadcast(room);
   }
@@ -308,13 +318,7 @@ class GameSocketBridge {
   }
 
   private emitToLocal(event: string, data: any) {
-    if (this.listeners[event]) {
-      this.listeners[event].forEach(cb => cb(data));
-    }
-  }
-
-  public setLocalState(room: Room) {
-    this.authoritativeRoom = room;
+    if (this.listeners[event]) this.listeners[event].forEach(cb => cb(data));
   }
 }
 

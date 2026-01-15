@@ -1,13 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
-import { UI_TRANSITIONS } from '../constants';
+import React, { useState } from 'react';
 
 interface Action {
   label: string;
   cost: number;
   icon: string;
   color: string;
-  oncePerTurn?: boolean;
+  shortcut?: string;
 }
 
 interface ControlPanelProps {
@@ -17,7 +16,6 @@ interface ControlPanelProps {
   isActive: boolean;
   actionsUsed: string[];
   deckEmpty?: boolean;
-  isInterrupting?: boolean;
 }
 
 export const ControlPanel: React.FC<ControlPanelProps> = ({ 
@@ -25,111 +23,68 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   onAction, 
   onEndTurn, 
   isActive,
-  actionsUsed,
   deckEmpty = false,
-  isInterrupting = false
 }) => {
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [kpAnimation, setKpAnimation] = useState(false);
   const [localSyncing, setLocalSyncing] = useState(false);
 
-  useEffect(() => {
-    setKpAnimation(true);
-    const timer = setTimeout(() => setKpAnimation(false), 500);
-    return () => clearTimeout(timer);
-  }, [kp]);
-
   const actions: Action[] = [
-    { label: 'Draw Card', cost: 1, icon: '🎴', color: '#0F766E' },
+    { label: 'Draw Card', cost: 1, icon: '🎴', color: '#0F766E', shortcut: 'D' },
     { label: 'Play Maya', cost: 1, icon: '✨', color: '#2563EB' },
     { label: 'Play Astra', cost: 1, icon: '⚔️', color: '#D97706' },
     { label: 'Attach Curse', cost: 1, icon: '💀', color: '#7F1D1D' },
-    { label: 'Introduce Major', cost: 1, icon: '👑', color: '#7C3AED', oncePerTurn: true },
-    { label: 'Invoke Power', cost: 1, icon: '🔥', color: '#F59E0B', oncePerTurn: true },
-    { label: 'Capture Assura', cost: 2, icon: '⛓️', color: '#047857' },
+    { label: 'Introduce Major', cost: 1, icon: '👑', color: '#7C3AED' },
+    { label: 'Capture Assura', cost: 2, icon: '⛓️', color: '#047857', shortcut: 'C' },
   ];
 
   const handleActionClick = (label: string, cost: number) => {
     setLocalSyncing(true);
     onAction(label, cost);
-    // Visual reset after network lag simulation
-    setTimeout(() => setLocalSyncing(false), 800);
+    setTimeout(() => setLocalSyncing(false), 300);
   };
-
-  const handleEndTurnClick = () => {
-    if (kp > 0) setShowConfirm(true);
-    else onEndTurn();
-  };
-
-  if (!isActive || isInterrupting) {
-    return (
-      <div className="bg-black/60 backdrop-blur-3xl border-t border-white/5 px-12 py-8 rounded-t-[40px] flex items-center justify-center opacity-40 grayscale pointer-events-none">
-        <p className="text-sm font-black uppercase tracking-[0.4em] text-white/40">
-          {isInterrupting ? 'Fate hangs in the balance...' : 'Waiting for other players to act...'}
-        </p>
-      </div>
-    );
-  }
 
   return (
-    <div className={`bg-black/80 backdrop-blur-3xl border-t border-white/10 px-6 md:px-12 py-6 rounded-t-[40px] shadow-[0_-20px_60px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom duration-500 ${localSyncing ? 'opacity-80' : ''}`}>
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-6">
-        <div className="flex-shrink-0 flex flex-col items-center">
-          <p className="text-[10px] font-black uppercase tracking-widest text-[#F59E0B]/60 mb-2">Karma Balance</p>
-          <div className={`
-            relative w-20 h-20 rounded-full bg-gradient-to-br from-[#F59E0B] to-[#D97706] 
-            flex items-center justify-center border-4 border-black/20 shadow-[0_0_20px_rgba(245,158,11,0.3)]
-            ${kpAnimation ? 'scale-110 ring-4 ring-[#F59E0B]/50' : ''} ${UI_TRANSITIONS}
-          `}>
-             <span className="text-3xl font-black text-black">{kp}</span>
+    <div className={`bg-black/95 backdrop-blur-3xl border-t-2 border-white/10 px-10 py-8 rounded-t-[60px] shadow-[0_-40px_120px_rgba(0,0,0,1)] transition-all ${!isActive ? 'opacity-40 grayscale' : ''}`}>
+      <div className="max-w-7xl mx-auto flex items-center gap-12">
+        <div className="flex flex-col items-center">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#F59E0B] mb-2">Thy Karma</p>
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#F59E0B] to-[#EA580C] flex items-center justify-center border-4 border-black/50 shadow-2xl transition-transform hover:scale-110">
+             <span className="text-4xl font-black text-black">{kp}</span>
           </div>
         </div>
 
-        <div className="h-16 w-px bg-white/10 hidden md:block mx-4"></div>
-
-        <div className="flex-1 flex gap-3 overflow-x-auto pb-4 md:pb-0 scrollbar-hide">
+        <div className="flex-1 flex gap-4 overflow-x-auto scrollbar-hide py-3">
           {actions.map((action) => {
-            const canAfford = kp >= action.cost;
-            const alreadyUsed = action.oncePerTurn && actionsUsed.includes(action.label);
-            const isDeckActionDisabled = action.label === 'Draw Card' && deckEmpty;
-            const isDisabled = !canAfford || alreadyUsed || isDeckActionDisabled;
-
+            const canAfford = kp >= action.cost && isActive;
+            const isDisabled = !canAfford || (action.label === 'Draw Card' && deckEmpty);
             return (
               <button
                 key={action.label}
                 onClick={() => !isDisabled && handleActionClick(action.label, action.cost)}
                 disabled={isDisabled}
-                className={`relative flex-1 min-w-[110px] h-24 flex flex-col items-center justify-center gap-1 rounded-2xl border-2 ${UI_TRANSITIONS} ${isDisabled ? 'border-white/5 bg-white/5 opacity-40 cursor-not-allowed' : 'border-white/10 hover:border-white/40 hover:-translate-y-1 hover:shadow-2xl'}`}
-                style={{ backgroundColor: !isDisabled ? `${action.color}22` : undefined, borderColor: !isDisabled ? `${action.color}44` : undefined }}
+                className={`flex-1 min-w-[110px] h-28 flex flex-col items-center justify-center gap-2 rounded-[32px] border-2 transition-all relative ${isDisabled ? 'border-white/5 opacity-10 cursor-not-allowed' : 'border-white/10 hover:border-white/50 hover:-translate-y-3 active:scale-95 shadow-lg hover:shadow-2xl'}`}
+                style={{ backgroundColor: !isDisabled ? `${action.color}22` : undefined }}
               >
-                <span className="text-2xl">{alreadyUsed ? '✅' : action.icon}</span>
-                <div className="text-center">
-                  <p className="text-[8px] font-black uppercase tracking-widest text-white leading-tight">{alreadyUsed ? 'Invoked' : action.label}</p>
-                  <p className={`text-[10px] font-bold ${!canAfford ? 'text-red-400' : 'text-white/60'}`}>{isDeckActionDisabled ? 'Empty' : `${action.cost} KP`}</p>
-                </div>
+                {action.shortcut && (
+                   <span className="absolute top-2 right-4 text-[7px] font-black text-white/40 border border-white/10 px-1 rounded">[{action.shortcut}]</span>
+                )}
+                <span className="text-3xl">{action.icon}</span>
+                <p className="text-[9px] font-black uppercase tracking-widest text-white">{action.label}</p>
+                <p className={`text-[11px] font-bold ${!canAfford ? 'text-red-500' : 'text-white/50'}`}>{action.cost} KP</p>
               </button>
             );
           })}
         </div>
 
-        <div className="flex-shrink-0 flex items-center pl-4 border-l border-white/10">
-          {showConfirm ? (
-            <div className="flex flex-col gap-2 items-center bg-white/5 p-3 rounded-2xl border border-white/10 animate-in fade-in zoom-in">
-              <p className="text-[8px] font-black uppercase text-white/60">Confirm End Turn?</p>
-              <div className="flex gap-2">
-                <button onClick={() => { onEndTurn(); setShowConfirm(false); }} className="px-4 py-2 bg-green-600 text-white text-[10px] font-black uppercase rounded-lg">Yes</button>
-                <button onClick={() => setShowConfirm(false)} className="px-4 py-2 bg-white/10 text-white text-[10px] font-black uppercase rounded-lg">No</button>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={handleEndTurnClick}
-              className={`group h-24 w-32 rounded-2xl bg-gradient-to-br from-[#EA580C] to-[#C2410C] flex flex-col items-center justify-center gap-1 shadow-xl hover:shadow-[#EA580C]/20 hover:scale-105 active:scale-95 ${UI_TRANSITIONS}`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-white group-hover:rotate-12 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">End Turn</span>
-            </button>
-          )}
+        <div className="flex items-center pl-10 border-l-2 border-white/10">
+          <button
+            onClick={onEndTurn}
+            disabled={!isActive}
+            className={`group h-28 w-44 rounded-[40px] flex flex-col items-center justify-center gap-2 shadow-2xl transition-all relative ${!isActive ? 'bg-white/5 opacity-10' : 'bg-[#EA580C] hover:bg-[#F97316] hover:scale-105 active:scale-95'}`}
+          >
+            <span className="absolute top-2 right-4 text-[7px] font-black text-white/40">[E]</span>
+            <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
+            <span className="text-xs font-black uppercase tracking-[0.3em] text-white">End Turn</span>
+          </button>
         </div>
       </div>
     </div>
