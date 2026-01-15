@@ -51,7 +51,7 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
 
   const handleAction = useCallback((label: string, cost: number) => {
     if (!isMyTurn || isGameOver) return showToast("Awaiting thy manifestation cycle...", "red");
-    
+
     if (label === 'Draw Card') {
       if (currentPlayer.karmaPoints < 1) return showToast("Insufficient Karma.", "red");
       emitAction('DRAW_CARD');
@@ -122,13 +122,13 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
     if (!rollingFor) return;
     const assura = rollingFor.card;
     const isCaptured = result >= (assura.captureRange?.[0] || 7);
-    
-    emitAction('CAPTURE_RESULT', { 
-      cardId: assura.id, 
-      isCaptured, 
-      cost: 2 
+
+    emitAction('CAPTURE_RESULT', {
+      cardId: assura.id,
+      isCaptured,
+      cost: 2
     });
-    
+
     setRollingFor(null);
   };
 
@@ -142,24 +142,24 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
       </div>
 
       {isGameOver && room.winner && (
-        <VictoryScreen 
-          roomName={room.roomName} 
-          winner={room.winner} 
-          players={room.players} 
-          turnCount={room.currentTurn} 
-          onReturnToLobby={() => socket.emit('reset_room', { roomId: room.roomCode })} 
-          onExit={onLeaveRoom} 
+        <VictoryScreen
+          roomName={room.roomName}
+          winner={room.winner}
+          players={room.players}
+          turnCount={room.currentTurn}
+          onReturnToLobby={() => socket.emit('reset_room', { roomId: room.roomCode })}
+          onExit={onLeaveRoom}
         />
       )}
 
       {showTurnOverlay && !isGameOver && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none animate-in fade-in zoom-in duration-500">
-           <div className="glass-panel px-20 py-10 rounded-[40px] border border-dharma-gold/30 shadow-[0_0_80px_rgba(245,158,11,0.2)]">
-             <div className="flex flex-col items-center gap-2">
-                <span className="text-dharma-gold font-black tracking-[0.6em] text-[10px] uppercase mb-2">Cycle Manifestation</span>
-                <h2 className="text-5xl font-black uppercase tracking-tight text-white text-center drop-shadow-lg">{activePlayer.name}</h2>
-             </div>
-           </div>
+          <div className="glass-panel px-20 py-10 rounded-[40px] border border-dharma-gold/30 shadow-[0_0_80px_rgba(245,158,11,0.2)]">
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-dharma-gold font-black tracking-[0.6em] text-[10px] uppercase mb-2">Cycle Manifestation</span>
+              <h2 className="text-5xl font-black uppercase tracking-tight text-white text-center drop-shadow-lg">{activePlayer.name}</h2>
+            </div>
+          </div>
         </div>
       )}
 
@@ -168,8 +168,8 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
       <InstructionPanel isMyTurn={isMyTurn} activePlayerName={activePlayer.name} targetingMode={targetingMode} selectedCard={currentPlayer.hand.find(c => c.id === selectedCardId)} />
 
       {rollingFor && (
-        <DiceRoller 
-          title={`Invoking Force against ${rollingFor.card.name}`} 
+        <DiceRoller
+          title={`Invoking Force against ${rollingFor.card.name}`}
           onComplete={handleRollComplete}
           ranges={{
             capture: rollingFor.card.captureRange,
@@ -180,60 +180,60 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
       )}
 
       {/* Main Play Area */}
-      <main className="flex-1 overflow-y-auto scrollbar-hide pt-28 pb-64 px-8">
+      <main className="flex-1 overflow-y-auto scrollbar-hide pt-28 pb-80 px-8">
         <div className="max-w-7xl mx-auto flex flex-col gap-12">
-          
+
           {/* Opponents Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {otherPlayers.map((p) => (
-              <PlayerArea 
+              <PlayerArea
                 key={p.id}
-                player={p} 
-                isActive={room.activePlayerIndex === room.players.findIndex(pl => pl.id === p.id)} 
-                isCurrent={false} 
-                position="top" 
-                targetingMode={targetingMode} 
-                onTargetSelect={handleTargetSelection} 
-                isGameOver={isGameOver} 
+                player={p}
+                isActive={room.activePlayerIndex === room.players.findIndex(pl => pl.id === p.id)}
+                isCurrent={false}
+                position="top"
+                targetingMode={targetingMode}
+                onTargetSelect={handleTargetSelection}
+                isGameOver={isGameOver}
               />
             ))}
           </div>
 
           {/* Central Neutral Zone */}
           <div className="relative flex flex-col lg:flex-row items-center justify-between gap-8 py-10 glass-panel rounded-[64px] border border-white/5 px-12 overflow-visible">
-             <div className="flex gap-10 items-center">
-               <DeckPile label="Universal Source" count={room.drawDeck.length} type="draw" />
-               <DeckPile label="Submerge" count={room.submergePile.length} type="submerge" />
-             </div>
-             
-             <AssuraZone 
-              assuras={room.assuras} 
-              targetingMode={targetingMode} 
-              onAssuraSelect={handleAssuraSelection} 
-             />
+            <div className="flex gap-10 items-center">
+              <DeckPile label="Universal Source" count={room.drawDeck.length} type="draw" />
+              <DeckPile label="Submerge" count={room.submergePile.length} type="submerge" />
+            </div>
 
-             <div className="flex flex-col gap-4">
-                <button 
-                  onClick={() => setShowLog(true)} 
-                  className="px-8 py-3 rounded-2xl bg-white/5 border border-white/10 font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all flex items-center gap-3 group"
-                >
-                  <svg className="w-5 h-5 text-dharma-gold group-hover:rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                  The Chronicles
-                </button>
-             </div>
+            <AssuraZone
+              assuras={room.assuras}
+              targetingMode={targetingMode}
+              onAssuraSelect={handleAssuraSelection}
+            />
+
+            <div className="flex flex-col gap-4">
+              <button
+                onClick={() => setShowLog(true)}
+                className="px-8 py-3 rounded-2xl bg-white/5 border border-white/10 font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all flex items-center gap-3 group"
+              >
+                <svg className="w-5 h-5 text-dharma-gold group-hover:rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                The Chronicles
+              </button>
+            </div>
           </div>
 
           {/* Player Personal Zone */}
           <div className="flex justify-center">
             <div className="w-full max-w-5xl">
-              <PlayerArea 
-                player={currentPlayer} 
-                isActive={isMyTurn} 
-                isCurrent={true} 
-                position="bottom" 
-                targetingMode={targetingMode} 
-                onTargetSelect={handleTargetSelection} 
-                isGameOver={isGameOver} 
+              <PlayerArea
+                player={currentPlayer}
+                isActive={isMyTurn}
+                isCurrent={true}
+                position="bottom"
+                targetingMode={targetingMode}
+                onTargetSelect={handleTargetSelection}
+                isGameOver={isGameOver}
               />
             </div>
           </div>
@@ -242,24 +242,24 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
 
       {/* Bottom Interface HUD */}
       <div className="fixed bottom-0 left-0 right-0 z-[110] flex flex-col pointer-events-none">
-         <div className="pointer-events-auto h-[170px]">
-            <PlayerHand 
-              hand={currentPlayer.hand} 
-              selectedCardId={selectedCardId} 
-              onSelectCard={(id) => !isGameOver && setSelectedCardId(selectedCardId === id ? null : id)} 
-              isGameOver={isGameOver} 
-            />
-         </div>
-         <div className="pointer-events-auto">
-            <ControlPanel 
-              kp={currentPlayer.karmaPoints} 
-              isActive={isMyTurn && !isGameOver} 
-              onAction={handleAction} 
-              onEndTurn={handleEndTurn} 
-              actionsUsed={[]} 
-              deckEmpty={room.drawDeck.length === 0}
-            />
-         </div>
+        <div className="pointer-events-auto h-[330px]">
+          <PlayerHand
+            hand={currentPlayer.hand}
+            selectedCardId={selectedCardId}
+            onSelectCard={(id) => !isGameOver && setSelectedCardId(selectedCardId === id ? null : id)}
+            isGameOver={isGameOver}
+          />
+        </div>
+        <div className="pointer-events-auto">
+          <ControlPanel
+            kp={currentPlayer.karmaPoints}
+            isActive={isMyTurn && !isGameOver}
+            onAction={handleAction}
+            onEndTurn={handleEndTurn}
+            actionsUsed={[]}
+            deckEmpty={room.drawDeck.length === 0}
+          />
+        </div>
       </div>
 
       {toast && (

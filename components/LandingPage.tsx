@@ -56,13 +56,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onCreateRoom, onJoinRo
         <div className="flex flex-col md:flex-row gap-4 mt-24">
           <button
             onClick={onSinglePlayer}
-            className="swiss-button bg-swiss-red text-swiss-white hover:bg-swiss-black hover:text-swiss-white border-swiss-black px-12 text-2xl"
+            className="swiss-button bg-swiss-red text-swiss-white px-12 text-2xl"
           >
             ASCEND ALONE
           </button>
           <button
             onClick={onCreateRoom}
-            className="swiss-button border-swiss-black px-12 text-2xl"
+            className="swiss-button bg-swiss-blue text-swiss-white px-12 text-2xl"
           >
             FORGE REALM
           </button>

@@ -16,7 +16,7 @@ interface CardProps {
 const CardIllustration: React.FC<{ card: IGameCard; size: string }> = ({ card }) => {
   const getIcon = () => {
     const name = (card.name || '').toLowerCase();
-    
+
     // Type-based icons with distinct SVG paths
     switch (card.type) {
       case 'Major':
@@ -102,9 +102,9 @@ const CardIllustration: React.FC<{ card: IGameCard; size: string }> = ({ card })
 
   return (
     <div className={`flex-1 rounded-xl flex items-center justify-center relative overflow-hidden border border-white/5 mb-2 bg-gradient-to-br ${getGradient()}`}>
-      <svg 
-        className="w-1/2 h-1/2 text-white/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]" 
-        viewBox="0 0 24 24" 
+      <svg
+        className="w-1/2 h-1/2 text-white/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]"
+        viewBox="0 0 24 24"
       >
         {getIcon()}
       </svg>
@@ -112,16 +112,16 @@ const CardIllustration: React.FC<{ card: IGameCard; size: string }> = ({ card })
   );
 };
 
-export const GameCard: React.FC<CardProps> = ({ 
+export const GameCard: React.FC<CardProps> = ({
   card, isBack = false, size = 'md', isInteractive = true, className = '', isHeld = false, isTargetable = false, onClick
 }) => {
   const theme = isBack ? { bg: '#1e293b', text: 'white' } : (CARD_THEMES[card?.type] || CARD_THEMES.General);
-  
+
   const dims = {
-    xs: 'w-12 h-18',
-    sm: 'w-24 h-36',
-    md: 'w-32 h-48',
-    lg: 'w-48 h-72'
+    xs: 'w-16 h-24',
+    sm: 'w-32 h-48',
+    md: 'w-40 h-60',
+    lg: 'w-56 h-84'
   };
 
   if (isBack || !card) {
@@ -140,9 +140,9 @@ export const GameCard: React.FC<CardProps> = ({
 
   return (
     <div className={`relative ${isHeld ? 'z-[100]' : ''}`} onClick={onClick}>
-      <div 
+      <div
         className={`
-          ${dims[size]} rounded-2xl border-2 flex flex-col p-2.5 shadow-2xl transition-all duration-300 relative overflow-hidden cursor-pointer
+          ${dims[size]} rounded-2xl border-2 flex flex-col p-3 shadow-2xl transition-all duration-300 relative overflow-hidden cursor-pointer
           ${isHeld ? 'card-selected-glow' : 'hover:-translate-y-2'}
           ${isTargetable ? 'ring-4 ring-dharma-gold animate-pulse scale-105' : 'border-white/10'}
           ${className}
@@ -153,39 +153,39 @@ export const GameCard: React.FC<CardProps> = ({
 
         <div className="absolute top-2 right-2 flex flex-col gap-1 z-20">
           {curseCount > 0 && (
-            <div className="bg-red-600 text-white px-1.5 py-0.5 rounded-full text-[7px] font-black border border-white/20 shadow-lg">☠ {curseCount}</div>
+            <div className="bg-red-600 text-white px-2 py-1 rounded-full text-[9px] font-black border border-white/20 shadow-lg">☠ {curseCount}</div>
           )}
           {astraCount > 0 && (
-            <div className="bg-dharma-gold text-black px-1.5 py-0.5 rounded-full text-[7px] font-black border border-white/20 shadow-lg">⚔ {astraCount}</div>
+            <div className="bg-dharma-gold text-black px-2 py-1 rounded-full text-[9px] font-black border border-white/20 shadow-lg">⚔ {astraCount}</div>
           )}
         </div>
 
-        <div className="flex justify-between items-start mb-1.5 z-10">
-          <span className="text-[8px] font-black uppercase tracking-tighter truncate max-w-[70%] text-white leading-none">{card.name}</span>
-          <span className="text-[6px] font-bold bg-white/10 px-1 rounded uppercase tracking-widest text-white/50">{card.type[0]}</span>
+        <div className="flex justify-between items-start mb-2 z-10">
+          <span className="text-[11px] font-black uppercase tracking-tight truncate max-w-[70%] text-white leading-none">{card.name}</span>
+          <span className="text-[8px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase tracking-widest text-white/50">{card.type[0]}</span>
         </div>
 
         <CardIllustration card={card} size={size} />
 
-        <div className="flex flex-col gap-1 z-10">
+        <div className="flex flex-col gap-1.5 z-10">
           {card.type === 'Assura' ? (
-            <div className="grid grid-cols-2 gap-1">
-              <div className="bg-black/40 rounded p-1 text-center border border-green-500/20">
-                <span className="block text-[5px] text-white/40 uppercase font-black">Cap</span>
-                <span className="text-[9px] font-black text-green-400">{card.captureRange?.[0]}+</span>
+            <div className="grid grid-cols-2 gap-1.5">
+              <div className="bg-black/40 rounded p-1.5 text-center border border-green-500/20">
+                <span className="block text-[7px] text-white/40 uppercase font-black">Cap</span>
+                <span className="text-[11px] font-black text-green-400">{card.captureRange?.[0]}+</span>
               </div>
-              <div className="bg-black/40 rounded p-1 text-center border border-red-500/20">
-                <span className="block text-[5px] text-white/40 uppercase font-black">Ret</span>
-                <span className="text-[9px] font-black text-red-500">{card.retaliationRange?.[0]}+</span>
+              <div className="bg-black/40 rounded p-1.5 text-center border border-red-500/20">
+                <span className="block text-[7px] text-white/40 uppercase font-black">Ret</span>
+                <span className="text-[11px] font-black text-red-500">{card.retaliationRange?.[0]}+</span>
               </div>
             </div>
           ) : (
             <>
-              <p className="text-[6.5px] font-medium leading-tight text-white/80 line-clamp-3 italic opacity-90 mb-1">{card.description}</p>
+              <p className="text-[8px] font-medium leading-snug text-white/90 line-clamp-3 italic opacity-95 mb-1">{card.description}</p>
               {(card.type === 'Major' || card.type === 'General') && (
-                <div className="flex justify-between items-center bg-black/20 px-1.5 py-0.5 rounded border border-white/5">
-                  <span className="text-[6px] font-black text-white/40">{card.classSymbol}</span>
-                  <span className="text-[7px] font-black text-dharma-gold">{card.powerRange?.[0] || '?'}-{card.powerRange?.[1] || '?'}</span>
+                <div className="flex justify-between items-center bg-black/20 px-2 py-1 rounded border border-white/5">
+                  <span className="text-[8px] font-black text-white/50">{card.classSymbol}</span>
+                  <span className="text-[9px] font-black text-dharma-gold">{card.powerRange?.[0] || '?'}-{card.powerRange?.[1] || '?'}</span>
                 </div>
               )}
             </>
