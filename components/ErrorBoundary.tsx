@@ -10,8 +10,8 @@ interface State {
   error: Error | null;
 }
 
-// Fix: Explicitly using React.Component to ensure the 'props' property is correctly inherited and typed.
-class ErrorBoundary extends React.Component<Props, State> {
+// Extending Component with defined Props and State to ensure 'props' is available.
+class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null
@@ -46,7 +46,7 @@ class ErrorBoundary extends React.Component<Props, State> {
       );
     }
 
-    // Fix: Correctly access children through this.props, which is now recognized by the compiler.
+    // Accessing children through this.props, which is now correctly typed.
     return this.props.children;
   }
 }
