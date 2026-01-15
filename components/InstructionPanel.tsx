@@ -22,10 +22,15 @@ export const InstructionPanel: React.FC<InstructionPanelProps> = ({ isMyTurn, ac
   const getHint = () => {
     if (!isMyTurn) return `Thy spirit is resting. Observe ${activePlayerName}'s manifestations.`;
     if (targetingMode === 'curse') return "Touch an opponent's warrior above to afflict them with thy Curse.";
-    if (targetingMode === 'astra') return "Touch thy own warrior card to empower them with thy Astra.";
+    if (targetingMode === 'astra') return "Touch thy own warrior card below to empower them with thy Astra.";
+    if (targetingMode === 'maya') return "Touch any warrior card on the battlefield to manifest thy illusion.";
+    if (targetingMode === 'capture-assura') return "Select a central Assura to attempt a capture roll.";
+    
     if (selectedCard) {
-      if (selectedCard.type === 'Major') return `Manifest ${selectedCard.name} into thy Sena forces. (1 KP)`;
-      if (selectedCard.type === 'Astra' || selectedCard.type === 'Curse') return "Choose an action from the panel below to manifest this power.";
+      if (selectedCard.type === 'Major') return `Manifest ${selectedCard.name} into thy Sena forces by selecting 'Introduce Major' (1 KP).`;
+      if (selectedCard.type === 'Astra') return "Manifest this enhancement by selecting 'Play Astra' and choosing thy warrior.";
+      if (selectedCard.type === 'Curse') return "Invoke this blight by selecting 'Attach Curse' and choosing an enemy warrior.";
+      if (selectedCard.type === 'Maya') return "Manifest this illusion by selecting 'Play Maya' and choosing a valid target.";
       return `Thy hand holds ${selectedCard.name}. Direct thy intent via the panel below.`;
     }
     return "Thy cycle is active. Manifest thy manifestations or conclude thy turn [E].";

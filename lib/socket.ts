@@ -11,7 +11,7 @@ class GameSocketBridge {
   private isProcessingAI: boolean = false;
 
   constructor() {
-    this.channel = new BroadcastChannel('tales_of_dharma_auth_v20');
+    this.channel = new BroadcastChannel('tales_of_dharma_auth_v21');
     this.channel.onmessage = (event) => {
       const { type, data } = event.data;
       if (type === 'BROADCAST_STATE') {
@@ -83,7 +83,6 @@ class GameSocketBridge {
       // 2. Try to capture an Assura if requirements met
       for (const assura of room.assuras) {
         if (bot.karmaPoints >= 2 && validateAssuraRequirement(bot.sena, assura.requirement || '')) {
-          // Bot "auto-rolls" for now with a random success chance for gameplay flow
           const roll = Math.floor(Math.random() * 6) + Math.floor(Math.random() * 6) + 2;
           const isCaptured = roll >= (assura.captureRange?.[0] || 7);
           
@@ -232,7 +231,7 @@ class GameSocketBridge {
         player.karmaPoints -= cost;
 
         if (played.type === 'Major') {
-          player.sena.push({ ...played, attachedAstras: [], curses: [] });
+          player.sena = [...player.sena, { ...played, attachedAstras: [], curses: [] }];
           room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `summoned ${played.name} to the Sena`, kpSpent: cost, timestamp: Date.now() });
         } else if (payload.targetInfo) {
           const targetPlayer = room.players.find(p => p.id === payload.targetInfo.playerId);
@@ -241,7 +240,6 @@ class GameSocketBridge {
             if (played.type === 'Curse') targetCard.curses = [...(targetCard.curses || []), played];
             if (played.type === 'Astra') targetCard.attachedAstras = [...(targetCard.attachedAstras || []), played];
             if (played.type === 'Maya') {
-               // Placeholder for Maya effects on targeted cards
                room.submergePile.push(played);
             }
             room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `manifested ${played.name} upon ${targetCard.name}`, kpSpent: cost, timestamp: Date.now() });
@@ -255,9 +253,15 @@ class GameSocketBridge {
 
       case 'END_TURN':
         if (!isActive) return;
+        // Broadcast game log for ending turn
+        room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `concluded their manifestations`, kpSpent: 0, timestamp: Date.now() });
+        
+        // Transition to next player
         room.activePlayerIndex = (room.activePlayerIndex + 1) % room.players.length;
         room.currentTurn += 1;
         room.turnStartTime = Date.now();
+        
+        // Reset Karma for the NEW active player
         room.players[room.activePlayerIndex].karmaPoints = 3;
         break;
     }
