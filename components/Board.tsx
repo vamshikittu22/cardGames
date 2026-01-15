@@ -40,7 +40,7 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
     return () => clearTimeout(t);
   }, [room.activePlayerIndex]);
 
-  const showToast = useCallback((message: string, color: string = '#0F766E') => {
+  const showToast = useCallback((message: string, color: string = '#14B8A6') => {
     setToast({ message, color });
     setTimeout(() => setToast(null), 3000);
   }, []);
@@ -61,7 +61,7 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
     if (label === 'Capture Assura') {
       if (currentPlayer.karmaPoints < 2) return showToast("Capture requires 2 Karma Points.", "red");
       setTargetingMode('capture-assura');
-      showToast("Select an Assura from the central realm.", "#047857");
+      showToast("Select an Assura from the central realm.", "#F59E0B");
       return;
     }
 
@@ -71,13 +71,13 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
     if (!card) return;
 
     if (label === 'Introduce Major') {
-      if (card.type !== 'Major') return showToast("Requires a Warrior manifestation.", "red");
+      if (card.type !== 'Major' && card.type !== 'General') return showToast("Requires a Warrior manifestation.", "red");
       emitAction('PLAY_CARD', { cardId: selectedCardId, cost: 1 });
       setSelectedCardId(null);
     } else if (label === 'Attach Curse') {
       if (card.type !== 'Curse') return showToast("Requires a Curse manifestation.", "red");
       setTargetingMode('curse');
-      showToast("Select an opponent's Major.", "#7F1D1D");
+      showToast("Select an opponent's Major.", "#991B1B");
     } else if (label === 'Play Astra') {
       if (card.type !== 'Astra') return showToast("Requires an Astra manifestation.", "red");
       setTargetingMode('astra');
@@ -103,7 +103,7 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
     emitAction('PLAY_CARD', { cardId: selectedCardId, cost: 1, targetInfo: { playerId, cardId } });
     setTargetingMode('none');
     setSelectedCardId(null);
-    showToast("Manifestation Successful", "#059669");
+    showToast("Divine Manifestation Successful", "#14B8A6");
   };
 
   const handleAssuraSelection = (assuraId: string) => {
@@ -133,11 +133,12 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
   };
 
   return (
-    <div className="fixed inset-0 bg-[#0F1117] text-white flex flex-col overflow-hidden">
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 pointer-events-none opacity-20">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-teal-500/20 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-orange-500/10 rounded-full blur-[120px]"></div>
+    <div className="fixed inset-0 bg-[#0A0C10] text-white flex flex-col overflow-hidden">
+      {/* Immersive Background */}
+      <div className="absolute inset-0 pointer-events-none opacity-40">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,#1e293b_0%,#0a0c10_80%)]"></div>
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-dharma-teal/5 blur-[150px] -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-dharma-gold/5 blur-[150px] translate-y-1/2 -translate-x-1/2"></div>
       </div>
 
       {isGameOver && room.winner && (
@@ -153,10 +154,10 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
 
       {showTurnOverlay && !isGameOver && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none animate-in fade-in zoom-in duration-500">
-           <div className="bg-black/95 backdrop-blur-3xl px-16 py-8 rounded-[40px] border border-white/10 shadow-2xl">
+           <div className="glass-panel px-20 py-10 rounded-[40px] border border-dharma-gold/30 shadow-[0_0_80px_rgba(245,158,11,0.2)]">
              <div className="flex flex-col items-center gap-2">
-                <span className="text-yellow-500 font-black tracking-[0.5em] text-[8px] uppercase">Divine Shift</span>
-                <h2 className="text-4xl font-black uppercase tracking-tight text-white text-center">{activePlayer.name}</h2>
+                <span className="text-dharma-gold font-black tracking-[0.6em] text-[10px] uppercase mb-2">Cycle Manifestation</span>
+                <h2 className="text-5xl font-black uppercase tracking-tight text-white text-center drop-shadow-lg">{activePlayer.name}</h2>
              </div>
            </div>
         </div>
@@ -168,7 +169,7 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
 
       {rollingFor && (
         <DiceRoller 
-          title={`Capturing ${rollingFor.card.name}`} 
+          title={`Invoking Force against ${rollingFor.card.name}`} 
           onComplete={handleRollComplete}
           ranges={{
             capture: rollingFor.card.captureRange,
@@ -178,31 +179,30 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
         />
       )}
 
-      {/* Main Battlefield Scrollbox */}
-      <main className="flex-1 overflow-y-auto scrollbar-hide flex flex-col items-center pt-24 pb-96">
-        <div className="w-full max-w-screen-2xl px-6 flex flex-col gap-12">
+      {/* Main Play Area */}
+      <main className="flex-1 overflow-y-auto scrollbar-hide pt-28 pb-64 px-8">
+        <div className="max-w-7xl mx-auto flex flex-col gap-12">
           
           {/* Opponents Section */}
-          <div className="flex flex-wrap justify-center gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {otherPlayers.map((p) => (
-              <div key={p.id} className="w-full lg:w-[45%] xl:w-[30%]">
-                <PlayerArea 
-                  player={p} 
-                  isActive={room.activePlayerIndex === room.players.findIndex(pl => pl.id === p.id)} 
-                  isCurrent={false} 
-                  position="top" 
-                  targetingMode={targetingMode} 
-                  onTargetSelect={handleTargetSelection} 
-                  isGameOver={isGameOver} 
-                />
-              </div>
+              <PlayerArea 
+                key={p.id}
+                player={p} 
+                isActive={room.activePlayerIndex === room.players.findIndex(pl => pl.id === p.id)} 
+                isCurrent={false} 
+                position="top" 
+                targetingMode={targetingMode} 
+                onTargetSelect={handleTargetSelection} 
+                isGameOver={isGameOver} 
+              />
             ))}
           </div>
 
-          {/* Neutral Zone (Assuras & Decks) */}
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-12 py-8 bg-black/20 rounded-[60px] border border-white/5 backdrop-blur-md px-12">
-             <div className="flex gap-8">
-               <DeckPile label="Draw" count={room.drawDeck.length} type="draw" />
+          {/* Central Neutral Zone */}
+          <div className="relative flex flex-col lg:flex-row items-center justify-between gap-8 py-10 glass-panel rounded-[64px] border border-white/5 px-12 overflow-visible">
+             <div className="flex gap-10 items-center">
+               <DeckPile label="Universal Source" count={room.drawDeck.length} type="draw" />
                <DeckPile label="Submerge" count={room.submergePile.length} type="submerge" />
              </div>
              
@@ -215,17 +215,17 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
              <div className="flex flex-col gap-4">
                 <button 
                   onClick={() => setShowLog(true)} 
-                  className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 font-black uppercase tracking-widest text-[9px] hover:bg-white/10 transition-all flex items-center gap-2"
+                  className="px-8 py-3 rounded-2xl bg-white/5 border border-white/10 font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all flex items-center gap-3 group"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                  Chronicles
+                  <svg className="w-5 h-5 text-dharma-gold group-hover:rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                  The Chronicles
                 </button>
              </div>
           </div>
 
-          {/* Self Section */}
+          {/* Player Personal Zone */}
           <div className="flex justify-center">
-            <div className="w-full lg:w-[80%] xl:w-[60%]">
+            <div className="w-full max-w-5xl">
               <PlayerArea 
                 player={currentPlayer} 
                 isActive={isMyTurn} 
@@ -240,9 +240,9 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
         </div>
       </main>
 
-      {/* Persistent HUD */}
-      <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col">
-         <div className="pointer-events-auto">
+      {/* Bottom Interface HUD */}
+      <div className="fixed bottom-0 left-0 right-0 z-[110] flex flex-col pointer-events-none">
+         <div className="pointer-events-auto h-[170px]">
             <PlayerHand 
               hand={currentPlayer.hand} 
               selectedCardId={selectedCardId} 
@@ -263,7 +263,7 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
       </div>
 
       {toast && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 px-8 py-3 rounded-full font-black uppercase text-[9px] tracking-[0.4em] text-white shadow-2xl z-[500] border border-white/20 animate-in slide-in-from-top" style={{ backgroundColor: toast.color }}>
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 px-10 py-3 rounded-full font-black uppercase text-[10px] tracking-[0.5em] text-white shadow-2xl z-[500] border border-white/20 animate-in slide-in-from-top-4" style={{ backgroundColor: toast.color }}>
           {toast.message}
         </div>
       )}

@@ -10,8 +10,8 @@ interface State {
   error: Error | null;
 }
 
-// Fixed the ErrorBoundary class to properly extend Component directly to ensure 'props' property is correctly recognized by the TypeScript compiler in various environments.
-class ErrorBoundary extends Component<Props, State> {
+// Fix: Explicitly using React.Component to ensure the 'props' property is correctly inherited and typed.
+class ErrorBoundary extends React.Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null
@@ -46,7 +46,7 @@ class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    // Standard behavior for ErrorBoundaries is to render children when no error occurs.
+    // Fix: Correctly access children through this.props, which is now recognized by the compiler.
     return this.props.children;
   }
 }

@@ -1,8 +1,46 @@
-/* Game specific animations */
-body {
-    font-family: 'Inter', sans-serif;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --dharma-gold: #F59E0B;
+  --dharma-teal: #14B8A6;
+  --dharma-dark: #0A0C10;
 }
 
+body {
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+  background-color: var(--dharma-dark);
+}
+
+h1, h2, h3, .font-display {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+/* Custom Scrollbar */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Glassmorphism */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Animations */
 @keyframes drawCard {
   0% {
     transform: translate(var(--start-x), var(--start-y)) scale(0.5) rotate(0deg);
@@ -29,18 +67,18 @@ body {
 }
 
 .card-selected-glow {
-  box-shadow: 0 0 20px 5px rgba(245, 158, 11, 0.3), 0 0 40px 10px rgba(245, 158, 11, 0.1);
-  border-color: #F59E0B !important;
-  transform: translateY(-20px) scale(1.05) !important;
-  z-index: 60;
-}
-
-.sena-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 1rem;
+  box-shadow: 0 0 25px 5px rgba(245, 158, 11, 0.4);
+  border-color: var(--dharma-gold) !important;
+  transform: translateY(-24px) scale(1.05) !important;
+  z-index: 100;
 }
 
 .divine-border {
   border-image: linear-gradient(to bottom right, rgba(245, 158, 11, 0.5), rgba(245, 158, 11, 0.05)) 1;
+}
+
+/* Mask for Mandala */
+.mandala-bg {
+  mask-image: radial-gradient(circle at center, black, transparent 70%);
+  opacity: 0.1;
 }

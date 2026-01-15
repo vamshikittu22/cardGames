@@ -5,45 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tales of Dharma | Chapter 1</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>🎴</text></svg>" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              dharma: {
-                teal: '#0F766E',
-                gold: '#F59E0B',
-                orange: '#EA580C',
-                dark: '#0F1117',
-              }
-            },
-            animation: {
-              'pulse-subtle': 'pulse-subtle 3s ease-in-out infinite',
-              'float': 'float 6s ease-in-out infinite',
-            }
-          }
-        }
-      }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
-      @keyframes float {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-      }
-      @keyframes pulse-subtle {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.95; transform: scale(1.005); }
-      }
-      .glass-dharma {
-        background: rgba(15, 17, 23, 0.8);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-      }
-      .scrollbar-hide::-webkit-scrollbar { display: none; }
-      .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
     <script type="importmap">
     {
       "imports": {
@@ -54,7 +16,8 @@
     }
     </script>
 </head>
-<body class="bg-[#0F1117] overflow-hidden">
+<body class="bg-[#0A0C10] text-white selection:bg-dharma-gold selection:text-black">
     <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
 </body>
 </html>
