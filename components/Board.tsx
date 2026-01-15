@@ -83,8 +83,12 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
       if (card.type !== 'Astra') return showToast("Requires an Astra manifestation.", "red");
       setTargetingMode('astra');
       showToast("Select thy own Major.", "#F59E0B");
+    } else if (label === 'Play Maya') {
+      if (card.type !== 'Maya') return showToast("Requires a Maya manifestation.", "red");
+      setTargetingMode('maya');
+      showToast("Select a Major to manifest illusion.", "#2563EB");
     } else {
-      emitAction('PLAY_CARD', { cardId: selectedCardId, cost: 1 });
+      emitAction('PLAY_CARD', { cardId: selectedCardId, cost: cost || 1 });
       setSelectedCardId(null);
     }
   }, [isMyTurn, isGameOver, currentPlayer, selectedCardId, emitAction, showToast]);
@@ -130,6 +134,7 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
 
   return (
     <div className="fixed inset-0 bg-[#0F1117] text-white flex flex-col overflow-hidden">
+      {/* Fix: Passed room.winner instead of undefined winner variable */}
       {isGameOver && room.winner && (
         <VictoryScreen roomName={room.roomName} winner={room.winner} players={room.players} turnCount={room.currentTurn} onReturnToLobby={() => socket.emit('reset_room', { roomId: room.roomCode })} onExit={onLeaveRoom} />
       )}
@@ -158,8 +163,8 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
         />
       )}
 
-      <main className="flex-1 mt-28 mb-80 flex flex-col items-center overflow-y-auto scrollbar-hide px-6 pb-20">
-        <div className="w-full max-w-screen-2xl flex justify-center gap-12 flex-wrap mb-16">
+      <main className="flex-1 mt-24 mb-[340px] flex flex-col items-center overflow-y-auto scrollbar-hide px-6 pb-12">
+        <div className="w-full max-w-screen-2xl flex justify-center gap-12 flex-wrap mb-16 pt-10">
           {otherPlayers.map((p) => (
             <div key={p.id} className="w-full lg:w-[calc(50%-2rem)] xl:w-[calc(33%-2rem)]">
               <PlayerArea player={p} isActive={room.activePlayerIndex === room.players.findIndex(pl => pl.id === p.id)} isCurrent={false} position="top" targetingMode={targetingMode} onTargetSelect={handleTargetSelection} isGameOver={isGameOver} />
@@ -184,12 +189,12 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
            </div>
         </div>
 
-        <div className="w-full max-w-screen-2xl flex justify-center mt-12">
+        <div className="w-full max-w-screen-2xl flex justify-center mt-12 pb-24">
           <PlayerArea player={currentPlayer} isActive={isMyTurn} isCurrent={true} position="bottom" targetingMode={targetingMode} onTargetSelect={handleTargetSelection} isGameOver={isGameOver} />
         </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none h-80 flex flex-col justify-end">
+      <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none h-auto flex flex-col justify-end bg-gradient-to-t from-black to-transparent">
          <div className="pointer-events-auto">
             <PlayerHand 
               hand={currentPlayer.hand} 

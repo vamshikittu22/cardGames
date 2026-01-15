@@ -118,7 +118,7 @@ export interface Room {
 }
 
 export type ViewState = 'landing' | 'lobby' | 'in-game';
-export type TargetingMode = 'none' | 'astra' | 'curse' | 'invoke' | 'capture-assura' | 'capture-majors' | 'clash-select' | 'shakny-select';
+export type TargetingMode = 'none' | 'astra' | 'curse' | 'invoke' | 'capture-assura' | 'capture-majors' | 'clash-select' | 'shakny-select' | 'maya';
 
 export type SocketEvent = 
   | 'create_room' 

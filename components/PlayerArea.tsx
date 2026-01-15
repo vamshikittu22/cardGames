@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { Player, TargetingMode } from '../types';
 import { GameCard } from './GameCard';
 import { UI_TRANSITIONS } from '../constants';
@@ -25,6 +25,14 @@ export const PlayerArea: React.FC<PlayerAreaProps> = ({
 }) => {
   const isOpponent = !isCurrent;
   const sena = player.sena;
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollSena = (dir: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const amount = dir === 'left' ? -200 : 200;
+      scrollRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+  };
 
   return (
     <div className={`
@@ -54,10 +62,29 @@ export const PlayerArea: React.FC<PlayerAreaProps> = ({
 
       {/* Forces Zone */}
       <div className="space-y-4">
-        <h5 className="text-[10px] font-black uppercase tracking-[0.6em] text-white/20 pl-4">Sena Forces</h5>
-        <div className="flex gap-8 p-10 bg-black/40 rounded-[40px] border-4 border-white/5 min-h-[220px] overflow-x-auto scrollbar-hide shadow-inner relative">
+        <div className="flex items-center justify-between px-4">
+          <h5 className="text-[10px] font-black uppercase tracking-[0.6em] text-white/20">Sena Forces</h5>
+          {sena.length > 3 && (
+            <div className="flex gap-2">
+              <button onClick={() => scrollSena('left')} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 text-white/40">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <button onClick={() => scrollSena('right')} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 text-white/40">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </div>
+          )}
+        </div>
+        <div 
+          ref={scrollRef}
+          className="flex gap-8 p-10 bg-black/40 rounded-[40px] border-4 border-white/5 min-h-[220px] overflow-x-auto scrollbar-hide shadow-inner relative"
+        >
            {sena.map(card => {
-             const canBeTargeted = (targetingMode === 'curse' && isOpponent) || (targetingMode === 'astra' && isCurrent);
+             const canBeTargeted = 
+               (targetingMode === 'curse' && isOpponent) || 
+               (targetingMode === 'astra' && isCurrent) || 
+               (targetingMode === 'maya');
+
              return (
                <div key={card.id} className="flex-shrink-0 relative group">
                   <GameCard 

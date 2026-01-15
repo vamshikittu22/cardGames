@@ -240,6 +240,10 @@ class GameSocketBridge {
           if (targetCard) {
             if (played.type === 'Curse') targetCard.curses = [...(targetCard.curses || []), played];
             if (played.type === 'Astra') targetCard.attachedAstras = [...(targetCard.attachedAstras || []), played];
+            if (played.type === 'Maya') {
+               // Placeholder for Maya effects on targeted cards
+               room.submergePile.push(played);
+            }
             room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `manifested ${played.name} upon ${targetCard.name}`, kpSpent: cost, timestamp: Date.now() });
           }
         } else {
