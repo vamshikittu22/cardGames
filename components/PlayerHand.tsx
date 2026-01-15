@@ -41,7 +41,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({ hand, selectedCardId, on
 
       <div
         ref={scrollRef}
-        className="flex gap-5 items-center justify-center px-16 py-8 overflow-x-auto scrollbar-hide w-full"
+        className="flex gap-4 items-center justify-center px-12 py-4 overflow-x-auto scrollbar-hide w-full"
       >
         {hand.map((card, idx) => {
           const isSelected = selectedCardId === card.id;
@@ -52,18 +52,18 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({ hand, selectedCardId, on
             <div
               key={card.id}
               onClick={() => onSelectCard(card.id)}
-              className={`flex-shrink-0 relative transition-all duration-300 ${isSelected ? 'z-[60] scale-[1.2]' : 'hover:scale-105 hover:z-[50]'} cursor-pointer`}
+              className={`flex-shrink-0 relative transition-all duration-300 ${isSelected ? 'z-[60] scale-[1.15]' : 'hover:scale-105 hover:z-[50]'} cursor-pointer`}
               style={{
-                transform: isSelected ? 'scale(1.2) rotate(0deg)' : `rotate(${rotation}deg)`,
+                transform: isSelected ? 'scale(1.15) rotate(0deg)' : `rotate(${rotation}deg)`,
               }}
             >
               <GameCard card={card} size="sm" isHeld={isSelected} />
-              <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-[9px] font-black text-white/30 uppercase tracking-widest opacity-0 group-hover/hand:opacity-100">[{idx + 1}]</div>
+              <div className="absolute -top-7 left-1/2 -translate-x-1/2 text-[9px] font-black text-white/30 uppercase tracking-widest opacity-0 group-hover/hand:opacity-100">[{idx + 1}]</div>
             </div>
           );
         })}
         {hand.length === 0 && (
-          <div className="py-12 px-24 text-white/5 uppercase font-black text-[10px] tracking-[0.5em] italic">Manifestations Depleted</div>
+          <div className="py-8 px-20 text-white/5 uppercase font-black text-[9px] tracking-[0.5em] italic">Manifestations Depleted</div>
         )}
       </div>
     </div>

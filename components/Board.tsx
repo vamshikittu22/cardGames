@@ -134,11 +134,9 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
 
   return (
     <div className="fixed inset-0 bg-[#0A0C10] text-white flex flex-col overflow-hidden">
-      {/* Immersive Background */}
+      {/* Background */}
       <div className="absolute inset-0 pointer-events-none opacity-40">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,#1e293b_0%,#0a0c10_80%)]"></div>
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-dharma-teal/5 blur-[150px] -translate-y-1/2 translate-x-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-dharma-gold/5 blur-[150px] translate-y-1/2 -translate-x-1/2"></div>
       </div>
 
       {isGameOver && room.winner && (
@@ -164,7 +162,6 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
       )}
 
       <GameHeader turnNumber={room.currentTurn} activePlayer={activePlayer} turnStartTime={room.turnStartTime} onLeave={onLeaveRoom} />
-
       <InstructionPanel isMyTurn={isMyTurn} activePlayerName={activePlayer.name} targetingMode={targetingMode} selectedCard={currentPlayer.hand.find(c => c.id === selectedCardId)} />
 
       {rollingFor && (
@@ -179,88 +176,86 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
         />
       )}
 
-      {/* Main Play Area */}
-      <main className="flex-1 overflow-y-auto scrollbar-hide pt-28 pb-80 px-8">
-        <div className="max-w-7xl mx-auto flex flex-col gap-12">
-
+      {/* SIMPLE VERTICAL LAYOUT */}
+      <main className="flex-1 flex flex-col overflow-y-auto scrollbar-hide pb-[320px]">
+        <div className="flex-1 flex flex-col gap-4 p-4 max-w-[1400px] mx-auto w-full">
+          
           {/* Opponents Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {otherPlayers.map((p) => (
-              <PlayerArea
+              <PlayerArea 
                 key={p.id}
-                player={p}
-                isActive={room.activePlayerIndex === room.players.findIndex(pl => pl.id === p.id)}
-                isCurrent={false}
-                position="top"
-                targetingMode={targetingMode}
-                onTargetSelect={handleTargetSelection}
-                isGameOver={isGameOver}
+                player={p} 
+                isActive={room.activePlayerIndex === room.players.findIndex(pl => pl.id === p.id)} 
+                isCurrent={false} 
+                position="top" 
+                targetingMode={targetingMode} 
+                onTargetSelect={handleTargetSelection} 
+                isGameOver={isGameOver} 
               />
             ))}
           </div>
 
-          {/* Central Neutral Zone */}
-          <div className="relative flex flex-col lg:flex-row items-center justify-between gap-8 py-10 glass-panel rounded-[64px] border border-white/5 px-12 overflow-visible">
-            <div className="flex gap-10 items-center">
-              <DeckPile label="Universal Source" count={room.drawDeck.length} type="draw" />
-              <DeckPile label="Submerge" count={room.submergePile.length} type="submerge" />
-            </div>
-
-            <AssuraZone
-              assuras={room.assuras}
-              targetingMode={targetingMode}
-              onAssuraSelect={handleAssuraSelection}
+          {/* Central Game Board */}
+          <div className="flex items-center justify-center gap-6 py-4 px-6 bg-gradient-to-br from-[#1a2332]/80 to-[#0d1117]/80 backdrop-blur-sm rounded-2xl border border-white/20">
+            <DeckPile label="Draw" count={room.drawDeck.length} type="draw" />
+            
+            <AssuraZone 
+              assuras={room.assuras} 
+              targetingMode={targetingMode} 
+              onAssuraSelect={handleAssuraSelection} 
             />
 
-            <div className="flex flex-col gap-4">
-              <button
-                onClick={() => setShowLog(true)}
-                className="px-8 py-3 rounded-2xl bg-white/5 border border-white/10 font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all flex items-center gap-3 group"
-              >
-                <svg className="w-5 h-5 text-dharma-gold group-hover:rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                The Chronicles
-              </button>
-            </div>
+            <DeckPile label="Discard" count={room.submergePile.length} type="submerge" />
+            
+            <button 
+              onClick={() => setShowLog(true)} 
+              className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 font-black uppercase tracking-widest text-[7px] hover:bg-white/10 transition-all"
+            >
+              Log
+            </button>
           </div>
 
-          {/* Player Personal Zone */}
-          <div className="flex justify-center">
-            <div className="w-full max-w-5xl">
-              <PlayerArea
-                player={currentPlayer}
-                isActive={isMyTurn}
-                isCurrent={true}
-                position="bottom"
-                targetingMode={targetingMode}
-                onTargetSelect={handleTargetSelection}
-                isGameOver={isGameOver}
-              />
-            </div>
+          {/* Your Play Area */}
+          <div className="w-full">
+            <PlayerArea 
+              player={currentPlayer} is Active={isMyTurn} 
+              isCurrent={true} 
+              position="bottom" 
+              targetingMode={targetingMode} 
+              onTargetSelect={handleTargetSelection} 
+              isGameOver={isGameOver} 
+            />
           </div>
         </div>
       </main>
 
-      {/* Bottom Interface HUD */}
-      <div className="fixed bottom-0 left-0 right-0 z-[110] flex flex-col pointer-events-none">
-        <div className="pointer-events-auto h-[330px]">
-          <PlayerHand
-            hand={currentPlayer.hand}
-            selectedCardId={selectedCardId}
-            onSelectCard={(id) => !isGameOver && setSelectedCardId(selectedCardId === id ? null : id)}
-            isGameOver={isGameOver}
+      {/* Fixed Bottom: Hand + Control Panel */}
+      <div className="fixed bottom-0 left-0 right-0 z-[200]">
+        {/* Hand Area */}
+        <div className="h-[230px] bg-gradient-to-t from-black via-black to-black/50 border-t-2 border-white/30 pt-3">
+          <div className="text-center text-[8px] font-black text-white/50 uppercase tracking-widest mb-2">▼ Your Hand ▼</div>
+          <PlayerHand 
+            hand={currentPlayer.hand} 
+            selectedCardId={selectedCardId} 
+            onSelectCard={(id) => !isGameOver && setSelectedCardId(selectedCardId === id ? null : id)} 
+            isGameOver={isGameOver} 
           />
         </div>
-        <div className="pointer-events-auto">
-          <ControlPanel
-            kp={currentPlayer.karmaPoints}
-            isActive={isMyTurn && !isGameOver}
-            onAction={handleAction}
-            onEndTurn={handleEndTurn}
-            actionsUsed={[]}
+        
+        {/* Control Panel */}
+        <div className="bg-black">
+          <ControlPanel 
+            kp={currentPlayer.karmaPoints} 
+            isActive={isMyTurn && !isGameOver} 
+            onAction={handleAction} 
+            onEndTurn={handleEndTurn} 
+            actionsUsed={[]} 
             deckEmpty={room.drawDeck.length === 0}
           />
         </div>
       </div>
+
 
       {toast && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 px-10 py-3 rounded-full font-black uppercase text-[10px] tracking-[0.5em] text-white shadow-2xl z-[500] border border-white/20 animate-in slide-in-from-top-4" style={{ backgroundColor: toast.color }}>
@@ -271,3 +266,4 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
     </div>
   );
 };
+
