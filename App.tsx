@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { LandingPage } from './components/LandingPage';
 import { CreateRoomForm, JoinRoomForm, SinglePlayerForm } from './components/RoomForms';
 import { WaitingRoom } from './components/WaitingRoom';
 import { Board } from './components/Board';
-import { Room, ViewState, Player, ChatMessage } from './types';
-import { getRandomColor, generateId } from './utils';
+import { Room, ViewState } from './types';
+import { getRandomColor } from './utils';
 import { socket } from './lib/socket';
 import { safeSessionStorage } from './lib/storage';
 
@@ -17,9 +17,8 @@ const App: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSinglePlayerMode, setIsSinglePlayerMode] = useState(false);
 
-  // Synchronize ID immediately when room updates
   useEffect(() => {
-    socket.on('room_updated', (data: { room: Room; currentPlayerId?: string }) => {
+    const handleRoomUpdate = (data: { room: Room; currentPlayerId?: string }) => {
       setRoom(data.room);
       
       const authoritativeId = data.currentPlayerId || safeSessionStorage.getItem('dharma_player_id');
@@ -32,18 +31,26 @@ const App: React.FC = () => {
       
       if (data.room.status === 'in-game') {
         setView('in-game');
-      } else if (data.room.status === 'waiting' && !isSinglePlayerMode) {
+      } else if (data.room.status === 'waiting') {
         if (view === 'landing' || view === 'creating' || view === 'joining' || view === 'single-player') {
           setView('lobby');
         }
       }
-    });
+    };
 
-    socket.on('error', (msg: string) => {
+    const handleError = (msg: string) => {
       setError(msg);
       setIsSyncing(false);
-    });
-  }, [view, isSinglePlayerMode]);
+    };
+
+    socket.on('room_updated', handleRoomUpdate);
+    socket.on('error', handleError);
+
+    return () => {
+      // Cleanup to prevent duplicate listeners
+      // Note: In our current bridge implementation, 'on' appends, so cleanup is good practice
+    };
+  }, [view]);
 
   const handleCreateRoom = (data: { roomName: string; maxPlayers: number; playerName: string }) => {
     setIsSyncing(true);
@@ -63,7 +70,6 @@ const App: React.FC = () => {
 
   const toggleReady = () => {
     if (!room || !currentPlayerId) return;
-    setIsSyncing(true);
     socket.emit('toggle_ready', { roomId: room.roomCode, playerId: currentPlayerId });
   };
 
@@ -88,7 +94,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen text-[#1F2937]">
+    <div className="min-h-screen text-[#1F2937] bg-[#FAFAFA]">
       {isSyncing && (
         <div className="fixed inset-0 z-[1000] bg-black/40 backdrop-blur-[2px] flex items-center justify-center cursor-wait">
            <div className="bg-white text-black px-8 py-4 rounded-full font-black uppercase text-[10px] tracking-[0.5em] animate-pulse shadow-2xl">
@@ -98,7 +104,11 @@ const App: React.FC = () => {
       )}
 
       {view === 'landing' && (
-        <LandingPage onCreateRoom={() => setView('creating')} onJoinRoom={() => setView('joining')} onSinglePlayer={() => setView('single-player')} />
+        <LandingPage 
+          onCreateRoom={() => setView('creating')} 
+          onJoinRoom={() => setView('joining')} 
+          onSinglePlayer={() => setView('single-player')} 
+        />
       )}
       
       {(view === 'creating' || view === 'joining' || view === 'single-player') && (
@@ -112,11 +122,23 @@ const App: React.FC = () => {
       )}
 
       {view === 'lobby' && room && (
-        <WaitingRoom room={room} currentPlayerId={currentPlayerId!} onToggleReady={toggleReady} onSendMessage={handleSendMessage} onStartGame={startGame} onLeaveRoom={leaveRoom} />
+        <WaitingRoom 
+          room={room} 
+          currentPlayerId={currentPlayerId!} 
+          onToggleReady={toggleReady} 
+          onSendMessage={handleSendMessage} 
+          onStartGame={startGame} 
+          onLeaveRoom={leaveRoom} 
+        />
       )}
 
       {(view === 'in-game' || room?.status === 'finished') && room && (
-        <Board room={room} currentPlayerId={currentPlayerId!} onUpdateRoom={() => {}} onLeaveRoom={leaveRoom} />
+        <Board 
+          room={room} 
+          currentPlayerId={currentPlayerId!} 
+          onUpdateRoom={() => {}} 
+          onLeaveRoom={leaveRoom} 
+        />
       )}
     </div>
   );
