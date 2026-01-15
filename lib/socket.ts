@@ -1,7 +1,6 @@
-
 import { Room, Player, GameCard, ChatMessage, LogEntry, WinCondition } from '../types';
 import { generateId, generateRoomCode, createMasterDeck, createAssuraPool, createGenerals, shuffle, getRandomColor, validateAssuraRequirement } from '../utils';
-import { safeSessionStorage } from './storage';
+import { safeSessionStorage } from '../utils/safeStorage';
 
 class GameSocketBridge {
   private listeners: Record<string, ((data: any) => void)[]> = {};

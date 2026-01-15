@@ -1,12 +1,7 @@
-
 import { Room, Player, GameCard, ChatMessage, LogEntry, WinCondition } from './types';
 import { generateId, generateRoomCode, createMasterDeck, createAssuraPool, createGenerals, shuffle, validateAssuraRequirement } from './utils';
-import { safeSessionStorage } from './lib/storage';
+import { safeSessionStorage } from './utils/safeStorage';
 
-/**
- * GameSocketBridge emulates a WebSocket connection using BroadcastChannel.
- * This acts as the single source of truth for the game state across all tabs.
- */
 class GameSocketBridge {
   private listeners: Record<string, ((data: any) => void)[]> = {};
   private authoritativeRoom: Room | null = null;
@@ -168,10 +163,6 @@ class GameSocketBridge {
         this.handleGameLogic(data.actionType, data.payload, data.playerId);
         break;
 
-      case 'interrupt_action':
-        this.handleInterruptLogic(data.type, data.payload, data.playerId);
-        break;
-
       case 'reset_room':
         if (!room) return;
         room.status = 'waiting';
@@ -259,12 +250,11 @@ class GameSocketBridge {
         room.actionsUsedThisTurn = [];
         room.players.forEach((p, idx) => {
           if (idx === room.activePlayerIndex) p.karmaPoints = Math.min(10, p.karmaPoints + 3);
-          p.sena.forEach(m => m.invokedThisTurn = false);
         });
         break;
 
       case 'CAPTURE_RESULT':
-        const { isCaptured, cardId, attackerIds } = payload;
+        const { isCaptured, cardId } = payload;
         const target = room.assuras.find(a => a.id === cardId);
         if (isCaptured && target) {
            player.jail = [...player.jail, target];
@@ -274,14 +264,6 @@ class GameSocketBridge {
              id: generateId(), turn: room.currentTurn, playerName: player.name, 
              action: `captured ${target.name}`, kpSpent: 0, timestamp: Date.now() 
            });
-        } else if (attackerIds) {
-           const attackers = player.sena.filter(m => attackerIds.includes(m.id));
-           room.submergePile = [...room.submergePile, ...attackers];
-           player.sena = player.sena.filter(m => !attackerIds.includes(m.id));
-           room.gameLogs.push({ 
-             id: generateId(), turn: room.currentTurn, playerName: player.name, 
-             action: `lost forces in retaliation`, kpSpent: 0, timestamp: Date.now() 
-           });
         }
         this.checkWinConditions(room);
         break;
@@ -290,31 +272,11 @@ class GameSocketBridge {
     this.broadcast(room);
   }
 
-  private handleInterruptLogic(type: string, payload: any, pId: string) {
-    let room = this.authoritativeRoom;
-    if (!room) return;
-
-    if (type === 'clash-window') {
-      room.pendingAction = payload.pendingAction;
-      room.interruptStatus = { type: 'clash-window', endTime: Date.now() + 3000 };
-    } else if (type === 'shakny-window') {
-      room.interruptStatus = { type: 'shakny-window', endTime: Date.now() + 3000, rollDetails: payload.rollDetails };
-      room.shaknyModifiers = [];
-    }
-    this.broadcast(room);
-  }
-
   private checkWinConditions(room: Room) {
     for (const p of room.players) {
       if (p.jail.length >= 3) {
         room.status = 'finished';
         room.winner = { id: p.id, name: p.name, color: p.color, condition: 'assura-capture', timestamp: Date.now() };
-        return;
-      }
-      const classes = new Set(p.sena.map(m => m.classSymbol).filter(Boolean));
-      if (classes.size >= 6) {
-        room.status = 'finished';
-        room.winner = { id: p.id, name: p.name, color: p.color, condition: 'class-completion', timestamp: Date.now() };
         return;
       }
     }

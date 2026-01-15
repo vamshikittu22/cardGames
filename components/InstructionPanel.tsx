@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { GameCard, TargetingMode } from '../types';
-import { safeLocalStorage } from '../lib/storage';
+import { safeLocalStorage } from '../utils/safeStorage';
 
 interface InstructionPanelProps {
   isMyTurn: boolean;

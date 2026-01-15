@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Room, GameCard as IGameCard, Player, TargetingMode } from '../types';
 import { GameHeader } from './GameHeader';
@@ -135,6 +134,12 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
 
   return (
     <div className="fixed inset-0 bg-[#0F1117] text-white flex flex-col overflow-hidden">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 pointer-events-none opacity-20">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-teal-500/20 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-orange-500/10 rounded-full blur-[120px]"></div>
+      </div>
+
       {isGameOver && room.winner && (
         <VictoryScreen 
           roomName={room.roomName} 
@@ -147,11 +152,11 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
       )}
 
       {showTurnOverlay && !isGameOver && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none animate-in fade-in zoom-in duration-700">
-           <div className="bg-black/95 backdrop-blur-3xl px-20 py-10 rounded-[60px] border-4 border-white/10 shadow-2xl scale-110">
-             <div className="flex flex-col items-center gap-4">
-                <span className="text-yellow-500 font-black tracking-[0.6em] text-[10px] uppercase">The Cycle Evolves</span>
-                <h2 className="text-5xl font-black uppercase tracking-[0.4em] text-white text-center">{activePlayer.name}</h2>
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none animate-in fade-in zoom-in duration-500">
+           <div className="bg-black/95 backdrop-blur-3xl px-16 py-8 rounded-[40px] border border-white/10 shadow-2xl">
+             <div className="flex flex-col items-center gap-2">
+                <span className="text-yellow-500 font-black tracking-[0.5em] text-[8px] uppercase">Divine Shift</span>
+                <h2 className="text-4xl font-black uppercase tracking-tight text-white text-center">{activePlayer.name}</h2>
              </div>
            </div>
         </div>
@@ -173,71 +178,70 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
         />
       )}
 
-      {/* Battlefield Main View */}
-      <main className="flex-1 mt-24 mb-[360px] flex flex-col items-center overflow-y-auto scrollbar-hide px-6 pb-20">
-        
-        {/* Top Section: Opponents Grid */}
-        <div className="w-full max-w-screen-2xl flex justify-center gap-12 flex-wrap mb-16 pt-10">
-          {otherPlayers.map((p) => (
-            <div key={p.id} className="w-full lg:w-[calc(50%-2rem)] xl:w-[calc(33%-2rem)]">
-              <PlayerArea 
-                player={p} 
-                isActive={room.activePlayerIndex === room.players.findIndex(pl => pl.id === p.id)} 
-                isCurrent={false} 
-                position="top" 
-                targetingMode={targetingMode} 
-                onTargetSelect={handleTargetSelection} 
-                isGameOver={isGameOver} 
-              />
-            </div>
-          ))}
-        </div>
+      {/* Main Battlefield Scrollbox */}
+      <main className="flex-1 overflow-y-auto scrollbar-hide flex flex-col items-center pt-24 pb-96">
+        <div className="w-full max-w-screen-2xl px-6 flex flex-col gap-12">
+          
+          {/* Opponents Section */}
+          <div className="flex flex-wrap justify-center gap-8">
+            {otherPlayers.map((p) => (
+              <div key={p.id} className="w-full lg:w-[45%] xl:w-[30%]">
+                <PlayerArea 
+                  player={p} 
+                  isActive={room.activePlayerIndex === room.players.findIndex(pl => pl.id === p.id)} 
+                  isCurrent={false} 
+                  position="top" 
+                  targetingMode={targetingMode} 
+                  onTargetSelect={handleTargetSelection} 
+                  isGameOver={isGameOver} 
+                />
+              </div>
+            ))}
+          </div>
 
-        {/* Middle Section: Tactical Center (Assuras & Stacks) */}
-        <div className="w-full max-w-screen-2xl flex flex-col lg:flex-row items-center justify-between gap-16 my-12 relative px-12 lg:px-24">
-           {/* Left Deck Panel */}
-           <div className="flex lg:flex-col gap-10">
-             <DeckPile label="Cosmos [D]" count={room.drawDeck.length} type="draw" />
-             <DeckPile label="Submerge" count={room.submergePile.length} type="submerge" />
-           </div>
-           
-           {/* Center Stage: Assura Zone */}
-           <div className="flex-1 flex justify-center">
+          {/* Neutral Zone (Assuras & Decks) */}
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-12 py-8 bg-black/20 rounded-[60px] border border-white/5 backdrop-blur-md px-12">
+             <div className="flex gap-8">
+               <DeckPile label="Draw" count={room.drawDeck.length} type="draw" />
+               <DeckPile label="Submerge" count={room.submergePile.length} type="submerge" />
+             </div>
+             
              <AssuraZone 
               assuras={room.assuras} 
               targetingMode={targetingMode} 
               onAssuraSelect={handleAssuraSelection} 
              />
-           </div>
 
-           {/* Right Utilities Panel */}
-           <div className="flex flex-col gap-6">
-              <button 
-                onClick={() => setShowLog(true)} 
-                className="group flex items-center gap-4 px-8 py-4 rounded-3xl bg-white/5 border border-white/10 font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all active:scale-95"
-              >
-                <svg className="w-5 h-5 text-white/40 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                Chronicles
-              </button>
-           </div>
-        </div>
+             <div className="flex flex-col gap-4">
+                <button 
+                  onClick={() => setShowLog(true)} 
+                  className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 font-black uppercase tracking-widest text-[9px] hover:bg-white/10 transition-all flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                  Chronicles
+                </button>
+             </div>
+          </div>
 
-        {/* Bottom Section: Current Player Arena */}
-        <div className="w-full max-w-screen-2xl flex justify-center mt-12 pb-32">
-          <PlayerArea 
-            player={currentPlayer} 
-            isActive={isMyTurn} 
-            isCurrent={true} 
-            position="bottom" 
-            targetingMode={targetingMode} 
-            onTargetSelect={handleTargetSelection} 
-            isGameOver={isGameOver} 
-          />
+          {/* Self Section */}
+          <div className="flex justify-center">
+            <div className="w-full lg:w-[80%] xl:w-[60%]">
+              <PlayerArea 
+                player={currentPlayer} 
+                isActive={isMyTurn} 
+                isCurrent={true} 
+                position="bottom" 
+                targetingMode={targetingMode} 
+                onTargetSelect={handleTargetSelection} 
+                isGameOver={isGameOver} 
+              />
+            </div>
+          </div>
         </div>
       </main>
 
-      {/* Interactive HUD (Hand & Controls) */}
-      <div className="fixed bottom-0 left-0 right-0 z-[100] pointer-events-none h-auto flex flex-col justify-end">
+      {/* Persistent HUD */}
+      <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col">
          <div className="pointer-events-auto">
             <PlayerHand 
               hand={currentPlayer.hand} 
@@ -258,7 +262,11 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
          </div>
       </div>
 
-      {toast && <div className="fixed top-28 left-1/2 -translate-x-1/2 px-10 py-4 rounded-full font-black uppercase text-[10px] tracking-[0.4em] text-white shadow-2xl z-[300] border-2 border-white/20 animate-in slide-in-from-top" style={{ backgroundColor: toast.color }}>{toast.message}</div>}
+      {toast && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 px-8 py-3 rounded-full font-black uppercase text-[9px] tracking-[0.4em] text-white shadow-2xl z-[500] border border-white/20 animate-in slide-in-from-top" style={{ backgroundColor: toast.color }}>
+          {toast.message}
+        </div>
+      )}
       <GameLog logs={room.gameLogs} isOpen={showLog} onClose={() => setShowLog(false)} />
     </div>
   );

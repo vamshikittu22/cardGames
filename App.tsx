@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { LandingPage } from './components/LandingPage';
 import { CreateRoomForm, JoinRoomForm, SinglePlayerForm } from './components/RoomForms';
@@ -7,17 +6,31 @@ import { Board } from './components/Board';
 import { Room, ViewState } from './types';
 import { getRandomColor } from './utils';
 import { socket } from './lib/socket';
-import { safeSessionStorage } from './lib/storage';
+import { safeSessionStorage } from './utils/safeStorage';
 
 const App: React.FC = () => {
+  const [isInitialized, setIsInitialized] = useState(false);
   const [view, setView] = useState<ViewState | 'creating' | 'joining' | 'single-player'>('landing');
   const [room, setRoom] = useState<Room | null>(null);
-  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(() => safeSessionStorage.getItem('dharma_player_id'));
+  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSinglePlayerMode, setIsSinglePlayerMode] = useState(false);
 
   useEffect(() => {
+    try {
+      // Sync player ID from safe storage on startup
+      const savedId = safeSessionStorage.getItem('dharma_player_id');
+      if (savedId) setCurrentPlayerId(savedId);
+      setIsInitialized(true);
+    } catch (err) {
+      console.error("Initialization failed:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isInitialized) return;
+
     const handleRoomUpdate = (data: { room: Room; currentPlayerId?: string }) => {
       setRoom(data.room);
       
@@ -47,10 +60,9 @@ const App: React.FC = () => {
     socket.on('error', handleError);
 
     return () => {
-      // Cleanup to prevent duplicate listeners
-      // Note: In our current bridge implementation, 'on' appends, so cleanup is good practice
+      // Listeners are managed inside the bridge class, but we can clear specific UI effects here if needed
     };
-  }, [view]);
+  }, [view, isInitialized]);
 
   const handleCreateRoom = (data: { roomName: string; maxPlayers: number; playerName: string }) => {
     setIsSyncing(true);
@@ -92,6 +104,17 @@ const App: React.FC = () => {
     setIsSinglePlayerMode(false);
     setView('landing');
   };
+
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen bg-[#0F1117] flex items-center justify-center text-white">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#F59E0B] border-t-transparent rounded-full animate-spin mx-auto mb-6 shadow-[0_0_20px_rgba(245,158,11,0.2)]"></div>
+          <p className="text-[#F59E0B] font-black uppercase tracking-[0.4em] text-[10px] animate-pulse">Aligning Manifestations...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen text-[#1F2937] bg-[#FAFAFA]">

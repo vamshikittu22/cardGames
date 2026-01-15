@@ -1,28 +1,8 @@
-
-/* Standard CSS only - @tailwind is handled by the script in index.html */
-
+/* Game specific animations */
 body {
     font-family: 'Inter', sans-serif;
-    background-color: #0F1117;
-    color: #FAFAFA;
-    margin: 0;
-    /* Removed overflow: hidden to ensure mobile accessibility and visibility */
 }
 
-@keyframes pulse-subtle {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.95; transform: scale(1.005); }
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Card Drawing Animation */
 @keyframes drawCard {
   0% {
     transform: translate(var(--start-x), var(--start-y)) scale(0.5) rotate(0deg);
@@ -48,10 +28,19 @@ body {
   animation: drawCard 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards;
 }
 
-/* Glowing selection effect */
 .card-selected-glow {
-  box-shadow: 0 0 15px 5px rgba(245, 158, 11, 0.4), 0 0 30px 10px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 0 20px 5px rgba(245, 158, 11, 0.3), 0 0 40px 10px rgba(245, 158, 11, 0.1);
   border-color: #F59E0B !important;
-  transform: translateY(-24px) scale(1.1) !important;
+  transform: translateY(-20px) scale(1.05) !important;
   z-index: 60;
+}
+
+.sena-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 1rem;
+}
+
+.divine-border {
+  border-image: linear-gradient(to bottom right, rgba(245, 158, 11, 0.5), rgba(245, 158, 11, 0.05)) 1;
 }
