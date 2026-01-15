@@ -10,7 +10,7 @@ class GameSocketBridge {
   private isProcessingAI: boolean = false;
 
   constructor() {
-    this.channel = new BroadcastChannel('tales_of_dharma_auth_v22');
+    this.channel = new BroadcastChannel('tales_of_dharma_auth_v23');
     this.channel.onmessage = (event) => {
       const { type, data } = event.data;
       if (type === 'BROADCAST_STATE') {
@@ -28,7 +28,8 @@ class GameSocketBridge {
   }
 
   emit(event: string, data: any) {
-    setTimeout(() => { this.processAuthoritativeAction(event, data); }, 50);
+    // Artificial latency for realism
+    setTimeout(() => { this.processAuthoritativeAction(event, data); }, 100);
   }
 
   private handleStateUpdate(data: { room: Room }) {
@@ -57,7 +58,7 @@ class GameSocketBridge {
     if (this.isProcessingAI) return;
     this.isProcessingAI = true;
 
-    const executeBotLogic = () => {
+    const executeBotStep = () => {
       const room = this.authoritativeRoom;
       if (!room || room.status !== 'in-game') {
         this.isProcessingAI = false;
@@ -70,28 +71,58 @@ class GameSocketBridge {
         return;
       }
 
-      // Simple AI logic: Try to play Major, then draw, then end.
+      // --- BOT STRATEGY LOOP ---
+      // 1. Can we capture an Assura?
+      if (bot.karmaPoints >= 2) {
+        for (const assura of room.assuras) {
+          if (validateAssuraRequirement(bot.sena, assura.requirement || '')) {
+            const roll = Math.floor(Math.random() * 6) + Math.floor(Math.random() * 6) + 2;
+            const isCaptured = roll >= (assura.captureRange?.[0] || 7);
+            this.handleGameLogic(room, 'CAPTURE_RESULT', { cardId: assura.id, isCaptured, cost: 2 }, bot.id);
+            this.broadcast(room);
+            setTimeout(executeBotStep, 1500);
+            return;
+          }
+        }
+      }
+
+      // 2. Can we play a Major?
       const majorIdx = bot.hand.findIndex(c => c.type === 'Major');
       if (majorIdx !== -1 && bot.karmaPoints >= 1) {
         this.handleGameLogic(room, 'PLAY_CARD', { cardId: bot.hand[majorIdx].id, cost: 1 }, bot.id);
         this.broadcast(room);
-        setTimeout(executeBotLogic, 1000);
+        setTimeout(executeBotStep, 1000);
         return;
       }
 
+      // 3. Can we play an Astra or Curse? (Simplified AI: target randomly)
+      const astraIdx = bot.hand.findIndex(c => c.type === 'Astra');
+      if (astraIdx !== -1 && bot.karmaPoints >= 1 && bot.sena.length > 0) {
+        this.handleGameLogic(room, 'PLAY_CARD', { 
+          cardId: bot.hand[astraIdx].id, 
+          cost: 1, 
+          targetInfo: { playerId: bot.id, cardId: bot.sena[0].id } 
+        }, bot.id);
+        this.broadcast(room);
+        setTimeout(executeBotStep, 1000);
+        return;
+      }
+
+      // 4. Draw if nothing else and have KP
       if (bot.karmaPoints >= 1 && bot.hand.length < 7 && room.drawDeck.length > 0) {
         this.handleGameLogic(room, 'DRAW_CARD', {}, bot.id);
         this.broadcast(room);
-        setTimeout(executeBotLogic, 1000);
+        setTimeout(executeBotStep, 1000);
         return;
       }
 
+      // 5. Out of KP or logical moves -> END TURN
       this.handleGameLogic(room, 'END_TURN', {}, bot.id);
       this.isProcessingAI = false;
       this.broadcast(room);
     };
 
-    setTimeout(executeBotLogic, 1500);
+    setTimeout(executeBotStep, 1500);
   }
 
   private processAuthoritativeAction(event: string, data: any) {
@@ -124,22 +155,39 @@ class GameSocketBridge {
         }
         this.broadcast(newRoom);
         break;
+
+      case 'join_room':
+        if (room && room.roomCode === data.roomCode) {
+          const joinId = generateId();
+          sessionStorage.setItem('dharma_player_id', joinId);
+          room.players.push({
+            id: joinId, name: data.playerName, color: data.color, isReady: false, isCreator: false, isConnected: true,
+            karmaPoints: 0, hand: [], sena: [], jail: []
+          });
+          this.broadcast(room);
+        }
+        break;
+
       case 'game_action':
         this.handleGameLogic(room, data.actionType, data.payload, data.playerId);
         this.broadcast(room);
         break;
+
       case 'chat_message':
         room.messages.push({ id: generateId(), playerId: data.playerId, playerName: data.playerName, text: data.text, timestamp: Date.now() });
         this.broadcast(room);
         break;
+
       case 'start_game':
         this.initializeGame(room);
         this.broadcast(room);
         break;
+
       case 'toggle_ready':
         room.players = room.players.map(p => p.id === data.playerId ? { ...p, isReady: !p.isReady } : p);
         this.broadcast(room);
         break;
+
       case 'reset_room':
         room.status = 'waiting';
         room.players = room.players.map(p => ({ ...p, isReady: false, hand: [], sena: [], jail: [] }));
@@ -176,7 +224,7 @@ class GameSocketBridge {
         if (!isActive || player.karmaPoints < 1) return;
         const c = room.drawDeck.shift();
         if (c) {
-          player.hand.push(c);
+          player.hand = [...player.hand, c];
           player.karmaPoints -= 1;
           room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: 'invoked a new manifestation', kpSpent: 1, timestamp: Date.now() });
         }
@@ -202,44 +250,47 @@ class GameSocketBridge {
         break;
 
       case 'PLAY_CARD':
-        const cost = payload.cost ?? 1;
-        if (!isActive || player.karmaPoints < cost) return;
-        const cIdx = player.hand.findIndex(i => i.id === payload.cardId);
-        if (cIdx === -1) return;
-        const played = player.hand.splice(cIdx, 1)[0];
-        player.karmaPoints -= cost;
+        const playCost = payload.cost ?? 1;
+        if (!isActive || player.karmaPoints < playCost) return;
+        const cardInHandIdx = player.hand.findIndex(i => i.id === payload.cardId);
+        if (cardInHandIdx === -1) return;
+        
+        const cardToPlay = player.hand.splice(cardInHandIdx, 1)[0];
+        player.karmaPoints -= playCost;
 
-        if (played.type === 'Major') {
-          player.sena = [...player.sena, { ...played, attachedAstras: [], curses: [] }];
-          room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `summoned ${played.name} to the Sena`, kpSpent: cost, timestamp: Date.now() });
+        if (cardToPlay.type === 'Major') {
+          player.sena = [...player.sena, { ...cardToPlay, attachedAstras: [], curses: [] }];
+          room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `summoned ${cardToPlay.name} to the Sena`, kpSpent: playCost, timestamp: Date.now() });
         } else if (payload.targetInfo) {
           const targetPlayer = room.players.find(p => p.id === payload.targetInfo.playerId);
           const targetCard = targetPlayer?.sena.find(c => c.id === payload.targetInfo.cardId);
           if (targetCard) {
-            if (played.type === 'Curse') {
-              targetCard.curses = [...(targetCard.curses || []), played];
-            } else if (played.type === 'Astra') {
-              targetCard.attachedAstras = [...(targetCard.attachedAstras || []), played];
-            } else if (played.type === 'Maya') {
-              room.submergePile.push(played);
+            if (cardToPlay.type === 'Curse') targetCard.curses = [...(targetCard.curses || []), cardToPlay];
+            else if (cardToPlay.type === 'Astra') targetCard.attachedAstras = [...(targetCard.attachedAstras || []), cardToPlay];
+            else if (cardToPlay.type === 'Maya') {
+              room.submergePile.push(cardToPlay);
+              // Maya effect logic can be expanded here
             }
-            room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `manifested ${played.name} upon ${targetCard.name}`, kpSpent: cost, timestamp: Date.now() });
+            room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `manifested ${cardToPlay.name} upon ${targetCard.name}`, kpSpent: playCost, timestamp: Date.now() });
           }
         } else {
-          room.submergePile.push(played);
-          room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `manifested ${played.name}`, kpSpent: cost, timestamp: Date.now() });
+          room.submergePile.push(cardToPlay);
+          room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `manifested ${cardToPlay.name}`, kpSpent: playCost, timestamp: Date.now() });
         }
         this.checkWinConditions(room);
         break;
 
       case 'END_TURN':
         if (!isActive) return;
+        room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: 'concluded manifestations', kpSpent: 0, timestamp: Date.now() });
+        
+        // Advance Turn
         room.activePlayerIndex = (room.activePlayerIndex + 1) % room.players.length;
         room.currentTurn += 1;
         room.turnStartTime = Date.now();
-        // Reset KP for the new active player
+        
+        // Reset KP for NEXT player
         room.players[room.activePlayerIndex].karmaPoints = 3;
-        room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: 'concluded their manifestations', kpSpent: 0, timestamp: Date.now() });
         break;
     }
   }

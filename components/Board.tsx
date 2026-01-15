@@ -35,7 +35,7 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
   const otherPlayers = useMemo(() => room.players.filter(p => p.id !== currentPlayerId), [room.players, currentPlayerId]);
   const isGameOver = room.status === 'finished';
 
-  // Turn animation logic
+  // Turn transition animation logic
   useEffect(() => {
     setShowTurnOverlay(true);
     const t = setTimeout(() => setShowTurnOverlay(false), 2000);
@@ -83,12 +83,13 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
     } else if (label === 'Play Astra') {
       if (card.type !== 'Astra') return showToast("Requires an Astra manifestation.", "red");
       setTargetingMode('astra');
-      showToast("Select thy own Major.", "#F59E0B");
+      showToast("Select thy own Major warrior.", "#F59E0B");
     } else if (label === 'Play Maya') {
       if (card.type !== 'Maya') return showToast("Requires a Maya manifestation.", "red");
       setTargetingMode('maya');
-      showToast("Select any Major to manifest illusion.", "#2563EB");
+      showToast("Select any warrior on the field.", "#2563EB");
     } else {
+      // Default behavior for other card types
       emitAction('PLAY_CARD', { cardId: selectedCardId, cost: cost || 1 });
       setSelectedCardId(null);
     }
@@ -105,6 +106,7 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
     emitAction('PLAY_CARD', { cardId: selectedCardId, cost: 1, targetInfo: { playerId, cardId } });
     setTargetingMode('none');
     setSelectedCardId(null);
+    showToast("Manifestation Successful", "#059669");
   };
 
   const handleAssuraSelection = (assuraId: string) => {
@@ -147,9 +149,12 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
       )}
 
       {showTurnOverlay && !isGameOver && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none animate-in fade-in duration-1000">
-           <div className="bg-black/95 backdrop-blur-3xl px-20 py-10 rounded-[60px] border-4 border-white/10 shadow-2xl scale-125">
-             <h2 className="text-5xl font-black uppercase tracking-[0.4em] text-white text-center">{activePlayer.name}'s Cycle</h2>
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none animate-in fade-in zoom-in duration-700">
+           <div className="bg-black/95 backdrop-blur-3xl px-20 py-10 rounded-[60px] border-4 border-white/10 shadow-2xl scale-110">
+             <div className="flex flex-col items-center gap-4">
+                <span className="text-yellow-500 font-black tracking-[0.6em] text-xs uppercase">The Cycle Evolves</span>
+                <h2 className="text-5xl font-black uppercase tracking-[0.4em] text-white text-center">{activePlayer.name}</h2>
+             </div>
            </div>
         </div>
       )}
@@ -170,8 +175,8 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
         />
       )}
 
-      <main className="flex-1 mt-24 mb-[320px] flex flex-col items-center overflow-y-auto scrollbar-hide px-6 pb-20">
-        <div className="w-full max-w-screen-2xl flex justify-center gap-12 flex-wrap mb-12 pt-8">
+      <main className="flex-1 mt-24 mb-[340px] flex flex-col items-center overflow-y-auto scrollbar-hide px-6 pb-20">
+        <div className="w-full max-w-screen-2xl flex justify-center gap-12 flex-wrap mb-16 pt-10">
           {otherPlayers.map((p) => (
             <div key={p.id} className="w-full lg:w-[calc(50%-2rem)] xl:w-[calc(33%-2rem)]">
               <PlayerArea 
@@ -187,7 +192,7 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
           ))}
         </div>
 
-        <div className="w-full max-w-screen-2xl flex flex-col lg:flex-row items-center justify-between gap-12 my-8 relative px-12 lg:px-24">
+        <div className="w-full max-w-screen-2xl flex flex-col lg:flex-row items-center justify-between gap-12 my-12 relative px-12 lg:px-24">
            <div className="flex lg:flex-col gap-10">
              <DeckPile label="Cosmos [D]" count={room.drawDeck.length} type="draw" />
              <DeckPile label="Submerge" count={room.submergePile.length} type="submerge" />
@@ -204,7 +209,7 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
            </div>
         </div>
 
-        <div className="w-full max-w-screen-2xl flex justify-center mt-8 pb-32">
+        <div className="w-full max-w-screen-2xl flex justify-center mt-12 pb-32">
           <PlayerArea 
             player={currentPlayer} 
             isActive={isMyTurn} 
