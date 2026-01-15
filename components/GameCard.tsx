@@ -15,72 +15,74 @@ interface CardProps {
 
 const CardIllustration: React.FC<{ card: IGameCard; size: string }> = ({ card }) => {
   const getIcon = () => {
-    const name = card.name.toLowerCase();
+    const name = (card.name || '').toLowerCase();
     
-    // Named hero icons
-    if (name.includes('arjuna')) {
-      return (
-        <g strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5">
-          <path d="M12 3L4 21h16L12 3z" />
-          <path d="M12 8v10M9 13h6" />
-        </g>
-      );
-    }
-    if (name.includes('krishna')) {
-      return (
-        <g strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 7v10M7 12h10" />
-          <path d="M15 9l-6 6M9 9l6 6" />
-        </g>
-      );
-    }
-    
-    // Type-based icons
+    // Type-based icons with distinct SVG paths
     switch (card.type) {
       case 'Major':
         return (
-          <g strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          <g fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
+            <path d="M13 19l6-6" />
+            <path d="M16 16l3 3" />
+            <path d="M19 13l3 3" />
           </g>
         );
       case 'Astra':
         return (
-          <g strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5">
+          <g fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
           </g>
         );
       case 'Curse':
         return (
-          <g strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5">
-            <path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2z" />
-            <path d="M9 10l6 4M15 10l-6 4" />
+          <g fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 10c0-1.657 1.343-3 3-3s3 1.343 3 3c0 3-3 3-3 6" />
+            <circle cx="12" cy="19" r="1" fill="currentColor" />
+            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z" />
           </g>
         );
       case 'Maya':
         return (
-          <g strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5">
-            <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            <path d="M12 8v4l3 3" />
+          <g fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 5v2m0 10v2M5 12H3m18 0h-2" />
           </g>
         );
       case 'Assura':
         return (
-          <g strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-            <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z" />
-            <path d="M8 10h8" />
+          <g fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 4l3 12 7-10 7 10 3-12" />
+            <path d="M2 20h20" />
+            <path d="M7 20v-2a5 5 0 0 1 10 0v2" />
+          </g>
+        );
+      case 'Shakny':
+        return (
+          <g fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="2" />
+            <circle cx="8" cy="8" r="1" fill="currentColor" />
+            <circle cx="16" cy="16" r="1" fill="currentColor" />
+            <circle cx="12" cy="12" r="1" fill="currentColor" />
+          </g>
+        );
+      case 'Clash':
+        return (
+          <g fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M7 7l10 10M7 17L17 7" />
+            <path d="M12 2v2M12 20v2M2 12h2m16 0h2" />
           </g>
         );
       case 'General':
         return (
-          <g strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5">
-            <path d="M12 2L2 7l10 5 10-5-10-5z" />
-            <path d="M2 17l10 5 10-5" />
-            <path d="M2 12l10 5 10-5" />
+          <g fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41" />
           </g>
         );
       default:
-        return <circle cx="12" cy="12" r="10" strokeWidth="1.5" />;
+        return <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" fill="none" />;
     }
   };
 
@@ -92,6 +94,8 @@ const CardIllustration: React.FC<{ card: IGameCard; size: string }> = ({ card })
       case 'Maya': return 'from-blue-500/30 to-indigo-900/40';
       case 'Assura': return 'from-red-600/40 to-black/90';
       case 'General': return 'from-teal-400/30 to-emerald-900/40';
+      case 'Shakny': return 'from-orange-500/30 to-red-800/40';
+      case 'Clash': return 'from-red-500/30 to-red-900/40';
       default: return 'from-slate-700 to-slate-900';
     }
   };
@@ -101,8 +105,6 @@ const CardIllustration: React.FC<{ card: IGameCard; size: string }> = ({ card })
       <svg 
         className="w-1/2 h-1/2 text-white/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]" 
         viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor"
       >
         {getIcon()}
       </svg>
@@ -113,7 +115,7 @@ const CardIllustration: React.FC<{ card: IGameCard; size: string }> = ({ card })
 export const GameCard: React.FC<CardProps> = ({ 
   card, isBack = false, size = 'md', isInteractive = true, className = '', isHeld = false, isTargetable = false, onClick
 }) => {
-  const theme = isBack ? { bg: 'bg-[#1e293b]', text: 'text-white' } : (CARD_THEMES[card?.type] || CARD_THEMES.General);
+  const theme = isBack ? { bg: '#1e293b', text: 'white' } : (CARD_THEMES[card?.type] || CARD_THEMES.General);
   
   const dims = {
     xs: 'w-12 h-18',
@@ -141,11 +143,11 @@ export const GameCard: React.FC<CardProps> = ({
       <div 
         className={`
           ${dims[size]} rounded-2xl border-2 flex flex-col p-2.5 shadow-2xl transition-all duration-300 relative overflow-hidden cursor-pointer
-          ${isHeld ? 'card-selected-glow' : 'hover:-translate-y-4'}
+          ${isHeld ? 'card-selected-glow' : 'hover:-translate-y-2'}
           ${isTargetable ? 'ring-4 ring-dharma-gold animate-pulse scale-105' : 'border-white/10'}
           ${className}
         `}
-        style={{ backgroundColor: theme.bg.startsWith('#') ? theme.bg : undefined }}
+        style={{ backgroundColor: theme.bg }}
       >
         <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
 
@@ -180,10 +182,10 @@ export const GameCard: React.FC<CardProps> = ({
           ) : (
             <>
               <p className="text-[6.5px] font-medium leading-tight text-white/80 line-clamp-3 italic opacity-90 mb-1">{card.description}</p>
-              {card.type === 'Major' && (
+              {(card.type === 'Major' || card.type === 'General') && (
                 <div className="flex justify-between items-center bg-black/20 px-1.5 py-0.5 rounded border border-white/5">
                   <span className="text-[6px] font-black text-white/40">{card.classSymbol}</span>
-                  <span className="text-[7px] font-black text-dharma-gold">{card.powerRange?.[0]}-{card.powerRange?.[1]}</span>
+                  <span className="text-[7px] font-black text-dharma-gold">{card.powerRange?.[0] || '?'}-{card.powerRange?.[1] || '?'}</span>
                 </div>
               )}
             </>
