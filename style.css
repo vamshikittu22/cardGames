@@ -1,84 +1,107 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-swiss-red: #FF4F00;
+  --color-swiss-blue: #2E5BFF;
+  --color-swiss-yellow: #FFD700;
+  --color-swiss-black: #000000;
+  --color-swiss-white: #FFFFFF;
+
+  --font-sans: "Inter", sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+}
 
 :root {
-  --dharma-gold: #F59E0B;
-  --dharma-teal: #14B8A6;
-  --dharma-dark: #0A0C10;
+  --swiss-red: #FF4F00;
+  --swiss-blue: #2E5BFF;
+  --swiss-black: #000000;
+  --swiss-white: #FFFFFF;
 }
 
 body {
   font-family: 'Inter', sans-serif;
-  overflow: hidden;
-  background-color: var(--dharma-dark);
+  background-color: var(--swiss-white);
+  color: var(--swiss-black);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, .font-display {
+h1,
+h2,
+h3,
+.font-display {
   font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Swiss Grid Utilities */
+.swiss-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 2rem;
+}
+
+.swiss-border {
+  border: 4px solid var(--swiss-black);
+}
+
+.swiss-button {
+  @apply px-8 py-4 font-black uppercase tracking-tighter transition-all duration-200;
+  border: 4px solid var(--swiss-black);
+  background: var(--swiss-white);
+  color: var(--swiss-black);
+}
+
+.swiss-button:hover {
+  background: var(--swiss-black);
+  color: var(--swiss-white);
+  transform: translate(-4px, -4px);
+  box-shadow: 8px 8px 0px var(--swiss-red);
+}
+
+.swiss-button:active {
+  transform: translate(0, 0);
+  box-shadow: 0px 0px 0px var(--swiss-red);
 }
 
 /* Custom Scrollbar */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
-/* Glassmorphism */
-.glass-panel {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* Swiss Card Style */
+.swiss-card {
+  border: 4px solid var(--swiss-black);
+  padding: 2rem;
+  background: var(--swiss-white);
 }
 
-.glass-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.swiss-card-vibrant-red {
+  background: var(--swiss-red);
+  color: var(--swiss-white);
 }
 
-/* Animations */
+.swiss-card-vibrant-blue {
+  background: var(--swiss-blue);
+  color: var(--swiss-white);
+}
+
 @keyframes drawCard {
   0% {
-    transform: translate(var(--start-x), var(--start-y)) scale(0.5) rotate(0deg);
-    opacity: 0;
+    transform: translateY(100vh) rotate(10deg);
   }
-  20% {
-    opacity: 1;
-  }
-  80% {
-    transform: translate(var(--end-x), var(--end-y)) scale(1.1) rotate(360deg);
-    opacity: 1;
-  }
+
   100% {
-    transform: translate(var(--end-x), var(--end-y)) scale(1) rotate(360deg);
-    opacity: 0;
+    transform: translateY(0) rotate(0);
   }
 }
 
 .animate-draw-card {
-  position: fixed;
-  z-index: 1000;
-  pointer-events: none;
-  animation: drawCard 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards;
-}
-
-.card-selected-glow {
-  box-shadow: 0 0 25px 5px rgba(245, 158, 11, 0.4);
-  border-color: var(--dharma-gold) !important;
-  transform: translateY(-24px) scale(1.05) !important;
-  z-index: 100;
-}
-
-.divine-border {
-  border-image: linear-gradient(to bottom right, rgba(245, 158, 11, 0.5), rgba(245, 158, 11, 0.05)) 1;
-}
-
-/* Mask for Mandala */
-.mandala-bg {
-  mask-image: radial-gradient(circle at center, black, transparent 70%);
-  opacity: 0.1;
+  animation: drawCard 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }

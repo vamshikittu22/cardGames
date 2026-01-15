@@ -1,5 +1,4 @@
 import React from 'react';
-import { Button } from './Button';
 
 interface LandingPageProps {
   onCreateRoom: () => void;
@@ -9,80 +8,81 @@ interface LandingPageProps {
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onCreateRoom, onJoinRoom, onSinglePlayer }) => {
   return (
-    <div className="min-h-screen relative flex flex-col items-center justify-center p-8 bg-dharma-dark overflow-hidden">
-      {/* Animated Mandala Background */}
-      <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-        <svg className="w-[150%] h-[150%] text-dharma-gold/5 animate-spin-slow opacity-20" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <path fill="currentColor" d="M100,10 A90,90 0 1,1 100,190 A90,90 0 1,1 100,10 M100,30 A70,70 0 1,0 100,170 A70,70 0 1,0 100,30" />
-          <g transform="translate(100,100)">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <rect key={i} x="-2" y="-95" width="4" height="20" transform={`rotate(${i * 30})`} fill="currentColor" />
-            ))}
-          </g>
-        </svg>
+    <div className="min-h-screen bg-swiss-white text-swiss-black font-sans selection:bg-swiss-red selection:text-swiss-white">
+      {/* Swiss Background Elements (Geometric) */}
+      <div className="fixed inset-0 pointer-events-none opacity-10">
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-swiss-blue"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-swiss-red"></div>
+        <div className="absolute top-1/4 left-1/4 w-12 h-12 border-8 border-swiss-black rounded-full"></div>
       </div>
 
-      {/* Decorative Orbs */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-dharma-teal/10 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2"></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-dharma-crimson/10 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2"></div>
-
-      <div className="max-w-4xl w-full text-center space-y-12 relative z-10">
-        {/* Header Section */}
-        <header className="space-y-6 animate-in fade-in slide-in-from-top duration-1000">
-          <div className="inline-block px-4 py-1.5 rounded-full bg-dharma-gold/10 border border-dharma-gold/20 text-dharma-gold text-[10px] font-black uppercase tracking-[0.4em] mb-4">
-            Mythological Strategy Card Game
+      <main className="relative z-10 p-12 lg:p-24 max-w-[1600px] mx-auto min-h-screen flex flex-col justify-between">
+        {/* Top Section: Asymmetric Header */}
+        <div className="swiss-grid">
+          <div className="col-span-12 lg:col-span-8">
+            <div className="mb-4 text-xs font-black uppercase tracking-[0.5em] text-swiss-red">
+              PROJECT • 001 / DHARMA
+            </div>
+            <h1 className="text-8xl md:text-[12rem] leading-[0.85] font-black uppercase tracking-tighter mb-12">
+              Tales<br />
+              <span className="text-swiss-blue">Of</span><br />
+              Dharma
+            </h1>
           </div>
-          <h1 className="text-7xl md:text-9xl font-black text-white tracking-tighter uppercase leading-none drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-            Tales <span className="text-dharma-gold">of</span> <br /> Dharma
-          </h1>
-          <p className="text-lg md:text-xl font-medium text-white/40 uppercase tracking-[0.3em] max-w-2xl mx-auto">
-            Chapter I: The Gathering of Souls
-          </p>
-        </header>
-
-        {/* Feature Display */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom duration-1000 delay-300">
-          <div className="glass-panel p-6 rounded-3xl border border-white/5 space-y-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-dharma-teal">Players</span>
-            <p className="text-2xl font-bold text-white">2 — 6</p>
-          </div>
-          <div className="glass-panel p-6 rounded-3xl border border-white/5 space-y-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-dharma-gold">Strategy</span>
-            <p className="text-2xl font-bold text-white">Advanced</p>
-          </div>
-          <div className="glass-panel p-6 rounded-3xl border border-white/5 space-y-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-red-500">Duration</span>
-            <p className="text-2xl font-bold text-white">45 Mins</p>
+          <div className="col-span-12 lg:col-span-4 flex flex-col justify-end pb-12">
+            <p className="text-2xl font-bold leading-tight uppercase tracking-tight">
+              A MYTHOLOGICAL STRATEGY SYSTEM DEVELOPED FOR THE MODERN INTERFACE. CHAPTER I: THE GATHERING.
+            </p>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-6 justify-center pt-8 animate-in fade-in duration-1000 delay-500">
-          <button 
+        {/* Middle Section: Info Blocks */}
+        <div className="swiss-grid mt-24">
+          <div className="col-span-12 md:col-span-4 swiss-border p-8 bg-swiss-black text-swiss-white">
+            <div className="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">PARTICIPANTS</div>
+            <div className="text-6xl font-black italic">02—06</div>
+          </div>
+          <div className="col-span-12 md:col-span-4 swiss-border p-8">
+            <div className="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50 text-swiss-red">DIFFICULTY</div>
+            <div className="text-6xl font-black italic">ADV.</div>
+          </div>
+          <div className="col-span-12 md:col-span-4 swiss-border p-8 bg-swiss-blue text-swiss-white">
+            <div className="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">RUNTIME</div>
+            <div className="text-6xl font-black italic">45M</div>
+          </div>
+        </div>
+
+        {/* Bottom Section: Actions */}
+        <div className="flex flex-col md:flex-row gap-4 mt-24">
+          <button
             onClick={onSinglePlayer}
-            className="w-full sm:w-64 h-16 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-dharma-gold transition-all transform hover:scale-105 active:scale-95 shadow-2xl"
+            className="swiss-button bg-swiss-red text-swiss-white hover:bg-swiss-black hover:text-swiss-white border-swiss-black px-12 text-2xl"
           >
-            Ascend Alone
+            ASCEND ALONE
           </button>
-          <div className="flex gap-4 w-full sm:w-auto">
-            <button 
-              onClick={onCreateRoom}
-              className="flex-1 sm:w-48 h-16 bg-dharma-teal text-white font-black uppercase tracking-widest rounded-2xl hover:bg-teal-400 transition-all transform hover:scale-105 active:scale-95 border border-teal-300/20"
-            >
-              Forge Realm
-            </button>
-            <button 
-              onClick={onJoinRoom}
-              className="flex-1 sm:w-48 h-16 bg-white/5 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all border border-white/10"
-            >
-              Enter Code
-            </button>
-          </div>
+          <button
+            onClick={onCreateRoom}
+            className="swiss-button border-swiss-black px-12 text-2xl"
+          >
+            FORGE REALM
+          </button>
+          <button
+            onClick={onJoinRoom}
+            className="swiss-button border-swiss-black px-12 text-2xl"
+          >
+            ENTER CODE
+          </button>
         </div>
-      </div>
+      </main>
 
-      <footer className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[9px] font-black uppercase tracking-[0.6em] text-white/20 whitespace-nowrap">
-        Built for the Divine Cycle • Chapter 1.0.4
+      <footer className="p-8 border-t-4 border-swiss-black flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+        <div>CORE SYSTEM VER. 1.0.4</div>
+        <div className="flex gap-8">
+          <span>ETHOS</span>
+          <span>SYSTEM</span>
+          <span>MANIFESTO</span>
+        </div>
+        <div className="text-swiss-red">© 2026 DHARMA LABS</div>
       </footer>
     </div>
   );

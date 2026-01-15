@@ -1,31 +1,35 @@
-
 import React from 'react';
-import { UI_TRANSITIONS } from '../constants';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
-  fullWidth?: boolean;
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
 }
 
-export const Button: React.FC<ButtonProps> = ({ 
-  children, 
-  variant = 'primary', 
-  fullWidth = false, 
-  className = '', 
-  ...props 
+export const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = 'primary',
+  size = 'md',
+  className = '',
+  ...props
 }) => {
-  const baseStyles = `px-6 py-3 rounded-lg font-bold text-sm uppercase tracking-wider ${UI_TRANSITIONS} disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95 shadow-sm hover:shadow-md`;
-  
+  const baseStyles = "swiss-button border-4 border-swiss-black font-black uppercase tracking-tighter transition-all active:translate-y-1 active:translate-x-1 active:shadow-none shadow-[4px_4px_0px_rgba(0,0,0,1)]";
+
   const variants = {
-    primary: 'bg-[#EA580C] text-white hover:bg-[#F97316]',
-    secondary: 'bg-[#0F766E] text-white hover:bg-[#14B8A6]',
-    outline: 'border-2 border-[#1F2937] text-[#1F2937] hover:bg-[#1F2937] hover:text-white',
-    ghost: 'text-[#1F2937] hover:bg-gray-100',
+    primary: "bg-swiss-red text-swiss-white hover:bg-swiss-black hover:text-swiss-white",
+    secondary: "bg-swiss-blue text-swiss-white hover:bg-swiss-black hover:text-swiss-white",
+    danger: "bg-red-500 text-white hover:bg-black",
+    ghost: "bg-transparent text-swiss-black hover:bg-swiss-black hover:text-swiss-white",
+  };
+
+  const sizes = {
+    sm: "px-4 py-2 text-xs",
+    md: "px-8 py-4 text-sm",
+    lg: "px-12 py-6 text-xl",
   };
 
   return (
-    <button 
-      className={`${baseStyles} ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className}`}
+    <button
+      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     >
       {children}

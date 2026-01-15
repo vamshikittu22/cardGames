@@ -33,15 +33,15 @@ const App: React.FC = () => {
 
     const handleRoomUpdate = (data: { room: Room; currentPlayerId?: string }) => {
       setRoom(data.room);
-      
+
       const authoritativeId = data.currentPlayerId || safeSessionStorage.getItem('dharma_player_id');
       if (authoritativeId) {
         setCurrentPlayerId(authoritativeId);
         safeSessionStorage.setItem('dharma_player_id', authoritativeId);
       }
-      
+
       setIsSyncing(false);
-      
+
       if (data.room.status === 'in-game') {
         setView('in-game');
       } else if (data.room.status === 'waiting') {
@@ -107,36 +107,38 @@ const App: React.FC = () => {
 
   if (!isInitialized) {
     return (
-      <div className="min-h-screen bg-[#0F1117] flex items-center justify-center text-white">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#F59E0B] border-t-transparent rounded-full animate-spin mx-auto mb-6 shadow-[0_0_20px_rgba(245,158,11,0.2)]"></div>
-          <p className="text-[#F59E0B] font-black uppercase tracking-[0.4em] text-[10px] animate-pulse">Aligning Manifestations...</p>
+      <div className="min-h-screen bg-swiss-white flex items-center justify-center">
+        <div className="text-center font-black italic tracking-tighter text-8xl animate-pulse">
+          LOADING...
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen text-[#1F2937] bg-[#FAFAFA]">
+    <div className="min-h-screen text-swiss-black bg-swiss-white selection:bg-swiss-red selection:text-white">
       {isSyncing && (
-        <div className="fixed inset-0 z-[1000] bg-black/40 backdrop-blur-[2px] flex items-center justify-center cursor-wait">
-           <div className="bg-white text-black px-8 py-4 rounded-full font-black uppercase text-[10px] tracking-[0.5em] animate-pulse shadow-2xl">
-             Aligning Cycles...
-           </div>
+        <div className="fixed inset-0 z-[1000] bg-swiss-black/90 flex items-center justify-center cursor-wait">
+          <div className="bg-swiss-red text-white px-12 py-6 font-black uppercase text-4xl tracking-tighter animate-bounce">
+            SYNCING...
+          </div>
         </div>
       )}
 
       {view === 'landing' && (
-        <LandingPage 
-          onCreateRoom={() => setView('creating')} 
-          onJoinRoom={() => setView('joining')} 
-          onSinglePlayer={() => setView('single-player')} 
+        <LandingPage
+          onCreateRoom={() => setView('creating')}
+          onJoinRoom={() => setView('joining')}
+          onSinglePlayer={() => setView('single-player')}
         />
       )}
-      
+
       {(view === 'creating' || view === 'joining' || view === 'single-player') && (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-2xl border-2 border-gray-100">
+        <div className="min-h-screen flex items-center justify-center p-4 bg-swiss-blue">
+          <div className="w-full max-w-2xl bg-swiss-white p-12 swiss-border shadow-[16px_16px_0px_rgba(0,0,0,1)]">
+            <div className="mb-8 text-xs font-black uppercase tracking-[0.5em] text-swiss-red">
+              SYSTEM • CONFIGURATION
+            </div>
             {view === 'creating' && <CreateRoomForm onSubmit={handleCreateRoom} onCancel={() => setView('landing')} />}
             {view === 'joining' && <JoinRoomForm onSubmit={handleJoinRoom} onCancel={() => setView('landing')} error={error} />}
             {view === 'single-player' && <SinglePlayerForm onSubmit={handleSinglePlayer} onCancel={() => setView('landing')} />}
@@ -145,22 +147,22 @@ const App: React.FC = () => {
       )}
 
       {view === 'lobby' && room && (
-        <WaitingRoom 
-          room={room} 
-          currentPlayerId={currentPlayerId!} 
-          onToggleReady={toggleReady} 
-          onSendMessage={handleSendMessage} 
-          onStartGame={startGame} 
-          onLeaveRoom={leaveRoom} 
+        <WaitingRoom
+          room={room}
+          currentPlayerId={currentPlayerId!}
+          onToggleReady={toggleReady}
+          onSendMessage={handleSendMessage}
+          onStartGame={startGame}
+          onLeaveRoom={leaveRoom}
         />
       )}
 
       {(view === 'in-game' || room?.status === 'finished') && room && (
-        <Board 
-          room={room} 
-          currentPlayerId={currentPlayerId!} 
-          onUpdateRoom={() => {}} 
-          onLeaveRoom={leaveRoom} 
+        <Board
+          room={room}
+          currentPlayerId={currentPlayerId!}
+          onUpdateRoom={() => { }}
+          onLeaveRoom={leaveRoom}
         />
       )}
     </div>
