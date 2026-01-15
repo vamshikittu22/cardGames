@@ -60,71 +60,153 @@ export const PlayerSenaZone: React.FC<PlayerSenaZoneProps> = ({
         )}
       </div>
 
-      {/* Battlefield - Like a real card game board */}
+      {/* Battlefield - Standardized scrollable area */}
       <div
         ref={scrollRef}
-        className="flex gap-3 p-3 bg-gradient-to-b from-[#1a2332] to-[#0d1117] rounded-xl border border-white/20 min-h-[180px] max-h-[260px] overflow-y-auto scrollbar-hide relative"
-        style={{
-          backgroundImage: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 40px)',
-        }}
+        className="flex gap-4 overflow-x-auto scrollbar-hide pb-8 pt-24 px-4 min-h-[220px] bg-black/40 border-y border-white/10"
       >
-        {/* Grid pattern like a game board */}
-        <div className="absolute inset-0 pointer-events-none opacity-5">
-          <div className="w-full h-full" style={{
-            backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-            backgroundSize: '40px 40px'
-          }}></div>
-        </div>
-
         {player.sena.length > 0 ? (
           player.sena.map((card) => {
-            const isAstraTarget = targetingMode === 'astra' && !isOpponent;
-            const isCurseTarget = targetingMode === 'curse' && isOpponent;
-            const isMayaTarget = targetingMode === 'maya';
-            const canBeTargeted = isAstraTarget || isCurseTarget || isMayaTarget;
+            const canBeTargeted = (targetingMode === 'astra' && !isOpponent) ||
+              (targetingMode === 'curse' && isOpponent) ||
+              (targetingMode === 'maya');
 
             return (
-              <div key={card.id} className="flex-shrink-0 relative group/unit">
-                {/* Class Badge */}
-                <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-30">
-                  <span className="bg-black/90 border border-white/30 px-2 py-0.5 rounded text-[7px] font-black text-[#F59E0B] shadow-lg">
-                    {card.classSymbol}
-                  </span>
-                </div>
-
-                {/* The Card */}
-                <GameCard
-                  card={card}
-                  size="sm"
-                  isInteractive={canBeTargeted}
-                  isTargetable={canBeTargeted}
-                  onClick={() => canBeTargeted && onTargetSelect(player.id, card.id)}
-                  className={`${canBeTargeted ? 'ring-2 ring-yellow-400' : ''}`}
-                />
-
-                {/* Power Stats */}
-                <div className="mt-2 flex justify-center">
-                  <div className="bg-black/60 border border-white/20 px-2 py-0.5 rounded text-[7px] font-black text-dharma-gold">
-                    {card.powerRange?.[0]}-{card.powerRange?.[1]}
-                  </div>
-                </div>
-
-                {/* Attachments */}
-                <div className="absolute -right-1 top-0 flex flex-col gap-1 z-20">
+              <div key={card.id} className="flex-shrink-0 relative group">
+                {/* Stacked Attachments Behind */}
+                <div className="relative">
+                  {/* Background stack of attached cards */}
                   {card.attachedAstras.map((astra, i) => (
                     <div
-                      key={`astra-${i}`}
-                      className="w-3 h-3 rounded-full bg-yellow-500 border border-white/40 shadow-[0_0_8px_rgba(245,158,11,0.6)]"
-                      title={`Astra: ${astra.name}`}
+                      key={`astra-bg-${i}`}
+                      className="absolute w-full h-full bg-gradient-to-br from-yellow-400/30 to-orange-500/30 rounded-lg border border-yellow-400/50"
+                      style={{
+                        top: `${(i + 1) * 3}px`,
+                        left: `${(i + 1) * 3}px`,
+                        zIndex: -(i + 1),
+                      }}
                     />
                   ))}
                   {card.curses.map((curse, i) => (
                     <div
-                      key={`curse-${i}`}
-                      className="w-3 h-3 rounded-full bg-red-600 border border-white/40 shadow-[0_0_8px_rgba(220,38,38,0.6)]"
-                      title={`Curse: ${curse.name}`}
+                      key={`curse-bg-${i}`}
+                      className="absolute w-full h-full bg-gradient-to-br from-red-600/30 to-red-800/30 rounded-lg border border-red-500/50"
+                      style={{
+                        top: `${(card.attachedAstras.length + i + 1) * 3}px`,
+                        left: `${(card.attachedAstras.length + i + 1) * 3}px`,
+                        zIndex: -(card.attachedAstras.length + i + 1),
+                      }}
                     />
                   ))}
+                  {card.mayas.map((maya, i) => (
+                    <div
+                      key={`maya-bg-${i}`}
+                      className="absolute w-full h-full bg-gradient-to-br from-blue-400/30 to-blue-600/30 rounded-lg border border-blue-400/50"
+                      style={{
+                        top: `${(card.attachedAstras.length + card.curses.length + i + 1) * 3}px`,
+                        left: `${(card.attachedAstras.length + card.curses.length + i + 1) * 3}px`,
+                        zIndex: -(card.attachedAstras.length + card.curses.length + i + 1),
+                      }}
+                    />
+                  ))}
+
+                  {/* Main Card */}
+                  <div className="relative z-10">
+                    {/* Class Badge */}
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-30">
+                      <span className="bg-black/90 border border-white/30 px-2 py-0.5 rounded text-[7px] font-black text-[#F59E0B] shadow-lg">
+                        {card.classSymbol}
+                      </span>
+                    </div>
+
+                    {/* The Card */}
+                    <GameCard
+                      card={card}
+                      size="sm"
+                      isInteractive={canBeTargeted}
+                      isTargetable={canBeTargeted}
+                      onClick={() => canBeTargeted && onTargetSelect(player.id, card.id)}
+                      className={`${canBeTargeted ? 'ring-2 ring-yellow-400' : ''}`}
+                    />
+
+                    {/* Attachment Count Badges - Bottom of card */}
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-30">
+                      {card.attachedAstras.length > 0 && (
+                        <div className="bg-yellow-500 border-2 border-yellow-300 rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
+                          <span className="text-[10px] font-black text-black">⚔{card.attachedAstras.length}</span>
+                        </div>
+                      )}
+                      {card.curses.length > 0 && (
+                        <div className="bg-red-600 border-2 border-red-400 rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
+                          <span className="text-[10px] font-black text-white">☠{card.curses.length}</span>
+                        </div>
+                      )}
+                      {card.mayas.length > 0 && (
+                        <div className="bg-blue-600 border-2 border-blue-400 rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
+                          <span className="text-[10px] font-black text-white">❉{card.mayas.length}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Power Stats */}
+                    <div className="mt-2 flex justify-center">
+                      <div className="bg-black/60 border border-white/20 px-2 py-0.5 rounded text-[7px] font-black text-dharma-gold">
+                        {card.powerRange?.[0]}-{card.powerRange?.[1]}
+                      </div>
+                    </div>
+
+                    {/* Hover Tooltip - Callout Bubble Above */}
+                    {(card.attachedAstras.length > 0 || card.curses.length > 0 || card.mayas.length > 0) && (
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-6 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 transform group-hover:-translate-y-2 z-50 w-56">
+                        <div className="bg-black/95 backdrop-blur-md border-2 border-white/20 rounded-xl p-3 shadow-[0_0_30px_rgba(0,0,0,0.8)] relative">
+                          {/* Callout Tail */}
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 w-4 h-4 bg-black/95 border-r-2 border-b-2 border-white/20 rotate-45 -mt-2"></div>
+
+                          <div className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-3 text-center border-b border-white/10 pb-2">Manifestation Status</div>
+
+                          {card.attachedAstras.length > 0 && (
+                            <div className="mb-3">
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <span className="bg-yellow-500/20 text-yellow-400 text-[10px] font-black px-1.5 py-0.5 rounded border border-yellow-500/30">⚔ ASTRAS</span>
+                                <span className="text-yellow-500/50 text-[10px] font-black">{card.attachedAstras.length}</span>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {card.attachedAstras.map((astra, i) => (
+                                  <div key={`tooltip-astra-${i}`} className="text-[9px] text-yellow-200/90 bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20 font-medium">{astra.name}</div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {card.curses.length > 0 && (
+                            <div className="mb-3">
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <span className="bg-red-500/20 text-red-400 text-[10px] font-black px-1.5 py-0.5 rounded border border-red-500/30">☠ CURSES</span>
+                                <span className="text-red-500/50 text-[10px] font-black">{card.curses.length}</span>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {card.curses.map((curse, i) => (
+                                  <div key={`tooltip-curse-${i}`} className="text-[9px] text-red-200/90 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20 font-medium">{curse.name}</div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {card.mayas.length > 0 && (
+                            <div>
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <span className="bg-blue-500/20 text-blue-400 text-[10px] font-black px-1.5 py-0.5 rounded border border-blue-500/30">❉ MAYAS</span>
+                                <span className="text-blue-500/50 text-[10px] font-black">{card.mayas.length}</span>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {card.mayas.map((maya, i) => (
+                                  <div key={`tooltip-maya-${i}`} className="text-[9px] text-blue-200/90 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 font-medium">{maya.name}</div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Targeting Overlay */}

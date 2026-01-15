@@ -32,7 +32,7 @@ const MAJOR_CLASSES = ['Vanas', 'Vahas', 'Dvas', 'Davis', 'Rishies', 'Kurus'];
 
 export const createMasterDeck = (): GameCard[] => {
   const deck: GameCard[] = [];
-  
+
   const counts = {
     Major: 30,
     Astra: 20,
@@ -43,31 +43,31 @@ export const createMasterDeck = (): GameCard[] => {
   };
 
   const pool: Record<string, { names: string[], desc: string, powerPrefix?: string, effects?: PowerEffectType[] }> = {
-    Major: { 
+    Major: {
       names: ['Arjuna', 'Bheema', 'Yudhisthira', 'Nakula', 'Sahadeva', 'Karna', 'Abhimanyu', 'Drona', 'Bhishma', 'Ashwatthama'],
       desc: 'A powerful warrior card.',
       powerPrefix: 'Divine Strike',
       effects: ['draw', 'kp', 'damage', 'protection']
     },
-    Astra: { 
+    Astra: {
       names: ['Gandiva', 'Vajra', 'Brahmastra', 'Pasupata', 'Sudarsana', 'Agneyastra', 'Varunastra'],
-      desc: 'Enhancement: Adds power or special traits to a Major.' 
+      desc: 'Enhancement: Adds power or special traits to a Major.'
     },
-    Curse: { 
+    Curse: {
       names: ['Doubt', 'Weakness', 'Betrayal', 'Amnesia', 'Fatigue', 'Silence'],
-      desc: 'Negative effect: Weakens an opponent\'s Major.' 
+      desc: 'Negative effect: Weakens an opponent\'s Major.'
     },
-    Maya: { 
+    Maya: {
       names: ['Illusion', 'Mirror Image', 'Mist', 'Shadow', 'Invisibility', 'Golden Deer'],
-      desc: 'Special effect: Changes the flow of the game.' 
+      desc: 'Special effect: Changes the flow of the game.'
     },
-    Shakny: { 
+    Shakny: {
       names: ['Fate Flip', 'Rigged Dice', 'Chaos Roll', 'Lucky Star'],
-      desc: 'Dice modifier: Changes the outcome of a roll.' 
+      desc: 'Dice modifier: Changes the outcome of a roll.'
     },
-    Clash: { 
+    Clash: {
       names: ['Duel', 'Intercept', 'Parry', 'Counter-Strike'],
-      desc: 'Interrupt: Challenge an opponent\'s action via 1v1 roll.' 
+      desc: 'Interrupt: Challenge an opponent\'s action via 1v1 roll.'
     }
   };
 
@@ -83,7 +83,8 @@ export const createMasterDeck = (): GameCard[] => {
         description: info.desc,
         classSymbol: cardType === 'Major' ? MAJOR_CLASSES[i % MAJOR_CLASSES.length] : undefined,
         attachedAstras: [],
-        curses: []
+        curses: [],
+        mayas: []
       };
 
       if (cardType === 'Major') {
@@ -108,13 +109,13 @@ export const createMasterDeck = (): GameCard[] => {
 
 export const createAssuraPool = (): GameCard[] => {
   const assuras: GameCard[] = [
-    { id: generateId(), type: 'Assura', name: 'Ravana', description: 'Ten-headed King of Lanka.', captureRange: [10, 12], retaliationRange: [3, 7], safeZone: [1, 2], requirement: '2 Vanas', attachedAstras: [], curses: [] },
-    { id: generateId(), type: 'Assura', name: 'Narakasura', description: 'Demon of Pragjyotisha.', captureRange: [9, 12], retaliationRange: [4, 8], safeZone: [1, 3], requirement: '2 Rishies', attachedAstras: [], curses: [] },
-    { id: generateId(), type: 'Assura', name: 'Mahishasura', description: 'The Buffalo Demon.', captureRange: [8, 12], retaliationRange: [3, 7], safeZone: [1, 2], requirement: '2 Kurus', attachedAstras: [], curses: [] },
-    { id: generateId(), type: 'Assura', name: 'Bakashura', description: 'The Voracious Demon.', captureRange: [7, 12], retaliationRange: [2, 6], safeZone: [1, 1], requirement: '2 Vahas', attachedAstras: [], curses: [] },
-    { id: generateId(), type: 'Assura', name: 'Kamsa', description: 'The Tyrant of Mathura.', captureRange: [8, 11], retaliationRange: [4, 7], safeZone: [1, 3], requirement: '2 Dvas', attachedAstras: [], curses: [] },
-    { id: generateId(), type: 'Assura', name: 'Tarakasura', description: 'Demon of the Golden City.', captureRange: [10, 12], retaliationRange: [3, 9], safeZone: [1, 2], requirement: '3 Any', attachedAstras: [], curses: [] },
-    { id: generateId(), type: 'Assura', name: 'Raktabija', description: 'The Multiplying Demon.', captureRange: [11, 12], retaliationRange: [2, 10], safeZone: [1, 1], requirement: '1 Vanas', attachedAstras: [], curses: [] }
+    { id: generateId(), type: 'Assura', name: 'Ravana', description: 'Ten-headed King of Lanka.', captureRange: [10, 12], retaliationRange: [3, 7], safeZone: [1, 2], requirement: '2 Vanas', attachedAstras: [], curses: [], mayas: [] },
+    { id: generateId(), type: 'Assura', name: 'Narakasura', description: 'Demon of Pragjyotisha.', captureRange: [9, 12], retaliationRange: [4, 8], safeZone: [1, 3], requirement: '2 Rishies', attachedAstras: [], curses: [], mayas: [] },
+    { id: generateId(), type: 'Assura', name: 'Mahishasura', description: 'The Buffalo Demon.', captureRange: [8, 12], retaliationRange: [3, 7], safeZone: [1, 2], requirement: '2 Kurus', attachedAstras: [], curses: [], mayas: [] },
+    { id: generateId(), type: 'Assura', name: 'Bakashura', description: 'The Voracious Demon.', captureRange: [7, 12], retaliationRange: [2, 6], safeZone: [1, 1], requirement: '2 Vahas', attachedAstras: [], curses: [], mayas: [] },
+    { id: generateId(), type: 'Assura', name: 'Kamsa', description: 'The Tyrant of Mathura.', captureRange: [8, 11], retaliationRange: [4, 7], safeZone: [1, 3], requirement: '2 Dvas', attachedAstras: [], curses: [], mayas: [] },
+    { id: generateId(), type: 'Assura', name: 'Tarakasura', description: 'Demon of the Golden City.', captureRange: [10, 12], retaliationRange: [3, 9], safeZone: [1, 2], requirement: '3 Any', attachedAstras: [], curses: [], mayas: [] },
+    { id: generateId(), type: 'Assura', name: 'Raktabija', description: 'The Multiplying Demon.', captureRange: [11, 12], retaliationRange: [2, 10], safeZone: [1, 1], requirement: '1 Vanas', attachedAstras: [], curses: [], mayas: [] }
   ];
   return shuffle(assuras);
 };
@@ -136,6 +137,7 @@ export const createGenerals = (): GameCard[] => {
     description: descs[i],
     attachedAstras: [],
     curses: [],
+    mayas: [],
     classSymbol: 'G'
   }));
 };

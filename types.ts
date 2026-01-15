@@ -30,6 +30,7 @@ export interface GameCard {
   classSymbol?: string;
   attachedAstras: GameCard[];
   curses: GameCard[];
+  mayas: GameCard[];
   // Phase 6 Power Fields
   powerName?: string;
   powerRange?: [number, number];
@@ -120,12 +121,12 @@ export interface Room {
 export type ViewState = 'landing' | 'lobby' | 'in-game';
 export type TargetingMode = 'none' | 'astra' | 'curse' | 'invoke' | 'capture-assura' | 'capture-majors' | 'clash-select' | 'shakny-select' | 'maya';
 
-export type SocketEvent = 
-  | 'create_room' 
-  | 'join_room' 
-  | 'leave_room' 
-  | 'toggle_ready' 
-  | 'start_game' 
+export type SocketEvent =
+  | 'create_room'
+  | 'join_room'
+  | 'leave_room'
+  | 'toggle_ready'
+  | 'start_game'
   | 'chat_message'
   | 'game_action'
   | 'interrupt_action'
