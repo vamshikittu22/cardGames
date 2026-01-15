@@ -43,7 +43,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   };
 
   return (
-    <div className={`bg-black/95 backdrop-blur-3xl border-t-2 border-white/10 px-10 py-8 rounded-t-[60px] shadow-[0_-40px_120px_rgba(0,0,0,1)] transition-all ${!isActive ? 'opacity-40 grayscale' : ''}`}>
+    <div className={`bg-black/95 backdrop-blur-3xl border-t-2 border-white/10 px-10 py-8 rounded-t-[60px] shadow-[0_-40px_120px_rgba(0,0,0,1)] transition-all pointer-events-auto ${!isActive ? 'opacity-70' : 'opacity-100'}`}>
       <div className="max-w-7xl mx-auto flex items-center gap-12">
         <div className="flex flex-col items-center">
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#F59E0B] mb-2">Thy Karma</p>
@@ -61,15 +61,15 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                 key={action.label}
                 onClick={() => !isDisabled && handleActionClick(action.label, action.cost)}
                 disabled={isDisabled}
-                className={`flex-1 min-w-[110px] h-28 flex flex-col items-center justify-center gap-2 rounded-[32px] border-2 transition-all relative ${isDisabled ? 'border-white/5 opacity-10 cursor-not-allowed' : 'border-white/10 hover:border-white/50 hover:-translate-y-3 active:scale-95 shadow-lg hover:shadow-2xl'}`}
-                style={{ backgroundColor: !isDisabled ? `${action.color}22` : undefined }}
+                className={`flex-1 min-w-[110px] h-28 flex flex-col items-center justify-center gap-2 rounded-[32px] border-2 transition-all relative ${isDisabled ? 'border-white/5 opacity-50 cursor-not-allowed bg-white/5' : 'border-white/10 hover:border-white/50 hover:-translate-y-3 active:scale-95 shadow-lg hover:shadow-2xl'}`}
+                style={{ backgroundColor: !isDisabled ? `${action.color}55` : '#111827' }}
               >
                 {action.shortcut && (
                    <span className="absolute top-2 right-4 text-[7px] font-black text-white/40 border border-white/10 px-1 rounded">[{action.shortcut}]</span>
                 )}
-                <span className="text-3xl">{action.icon}</span>
-                <p className="text-[9px] font-black uppercase tracking-widest text-white">{action.label}</p>
-                <p className={`text-[11px] font-bold ${!canAfford ? 'text-red-500' : 'text-white/50'}`}>{action.cost} KP</p>
+                <span className={`text-3xl ${isDisabled ? 'filter grayscale opacity-30' : ''}`}>{action.icon}</span>
+                <p className={`text-[9px] font-black uppercase tracking-widest ${isDisabled ? 'text-white/40' : 'text-white'}`}>{action.label}</p>
+                <p className={`text-[12px] font-bold ${!canAfford && isActive ? 'text-red-500' : isDisabled ? 'text-white/20' : 'text-white/80'}`}>{action.cost} KP</p>
               </button>
             );
           })}
@@ -79,10 +79,10 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           <button
             onClick={onEndTurn}
             disabled={!isActive}
-            className={`group h-28 w-44 rounded-[40px] flex flex-col items-center justify-center gap-2 shadow-2xl transition-all relative ${!isActive ? 'bg-white/5 opacity-10' : 'bg-[#EA580C] hover:bg-[#F97316] hover:scale-105 active:scale-95'}`}
+            className={`group h-28 w-44 rounded-[40px] flex flex-col items-center justify-center gap-2 shadow-2xl transition-all relative ${!isActive ? 'bg-white/5 opacity-20' : 'bg-[#EA580C] hover:bg-[#F97316] hover:scale-105 active:scale-95'}`}
           >
             <span className="absolute top-2 right-4 text-[7px] font-black text-white/40">[E]</span>
-            <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
+            <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
             <span className="text-xs font-black uppercase tracking-[0.3em] text-white">End Turn</span>
           </button>
         </div>
