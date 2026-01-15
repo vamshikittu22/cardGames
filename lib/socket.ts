@@ -7,11 +7,10 @@ class GameSocketBridge {
   private authoritativeRoom: Room | null = null;
   private channel: BroadcastChannel;
   public connected: boolean = true;
-  private aiInterval: any = null;
   private isProcessingAI: boolean = false;
 
   constructor() {
-    this.channel = new BroadcastChannel('tales_of_dharma_auth_v21');
+    this.channel = new BroadcastChannel('tales_of_dharma_auth_v22');
     this.channel.onmessage = (event) => {
       const { type, data } = event.data;
       if (type === 'BROADCAST_STATE') {
@@ -47,7 +46,7 @@ class GameSocketBridge {
       this.listeners['room_updated'].forEach(cb => cb({ room: nextRoom }));
     }
     
-    // Check for Bot Turn
+    // Trigger Bot AI if it's their turn
     const activePlayer = room.players[room.activePlayerIndex];
     if (room.status === 'in-game' && activePlayer.id.startsWith('bot-')) {
       this.triggerBotTurn();
@@ -71,48 +70,28 @@ class GameSocketBridge {
         return;
       }
 
-      // 1. Try to play a Major (Priority)
+      // Simple AI logic: Try to play Major, then draw, then end.
       const majorIdx = bot.hand.findIndex(c => c.type === 'Major');
       if (majorIdx !== -1 && bot.karmaPoints >= 1) {
         this.handleGameLogic(room, 'PLAY_CARD', { cardId: bot.hand[majorIdx].id, cost: 1 }, bot.id);
         this.broadcast(room);
-        setTimeout(executeBotLogic, 800);
+        setTimeout(executeBotLogic, 1000);
         return;
       }
 
-      // 2. Try to capture an Assura if requirements met
-      for (const assura of room.assuras) {
-        if (bot.karmaPoints >= 2 && validateAssuraRequirement(bot.sena, assura.requirement || '')) {
-          const roll = Math.floor(Math.random() * 6) + Math.floor(Math.random() * 6) + 2;
-          const isCaptured = roll >= (assura.captureRange?.[0] || 7);
-          
-          this.handleGameLogic(room, 'CAPTURE_RESULT', { 
-            cardId: assura.id, 
-            isCaptured, 
-            cost: 2 
-          }, bot.id);
-          
-          this.broadcast(room);
-          setTimeout(executeBotLogic, 800);
-          return;
-        }
-      }
-
-      // 3. Draw a card if KP left
       if (bot.karmaPoints >= 1 && bot.hand.length < 7 && room.drawDeck.length > 0) {
         this.handleGameLogic(room, 'DRAW_CARD', {}, bot.id);
         this.broadcast(room);
-        setTimeout(executeBotLogic, 800);
+        setTimeout(executeBotLogic, 1000);
         return;
       }
 
-      // 4. Out of KP or moves
       this.handleGameLogic(room, 'END_TURN', {}, bot.id);
       this.isProcessingAI = false;
       this.broadcast(room);
     };
 
-    setTimeout(executeBotLogic, 1000);
+    setTimeout(executeBotLogic, 1500);
   }
 
   private processAuthoritativeAction(event: string, data: any) {
@@ -210,7 +189,7 @@ class GameSocketBridge {
         
         const assura = room.assuras.find(a => a.id === payload.cardId);
         if (payload.isCaptured && assura) {
-          player.jail.push(assura);
+          player.jail = [...player.jail, assura];
           room.assuras = room.assuras.filter(a => a.id !== assura.id);
           if (room.assuraReserve.length > 0) {
             room.assuras.push(room.assuraReserve.shift()!);
@@ -237,10 +216,12 @@ class GameSocketBridge {
           const targetPlayer = room.players.find(p => p.id === payload.targetInfo.playerId);
           const targetCard = targetPlayer?.sena.find(c => c.id === payload.targetInfo.cardId);
           if (targetCard) {
-            if (played.type === 'Curse') targetCard.curses = [...(targetCard.curses || []), played];
-            if (played.type === 'Astra') targetCard.attachedAstras = [...(targetCard.attachedAstras || []), played];
-            if (played.type === 'Maya') {
-               room.submergePile.push(played);
+            if (played.type === 'Curse') {
+              targetCard.curses = [...(targetCard.curses || []), played];
+            } else if (played.type === 'Astra') {
+              targetCard.attachedAstras = [...(targetCard.attachedAstras || []), played];
+            } else if (played.type === 'Maya') {
+              room.submergePile.push(played);
             }
             room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `manifested ${played.name} upon ${targetCard.name}`, kpSpent: cost, timestamp: Date.now() });
           }
@@ -253,16 +234,12 @@ class GameSocketBridge {
 
       case 'END_TURN':
         if (!isActive) return;
-        // Broadcast game log for ending turn
-        room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: `concluded their manifestations`, kpSpent: 0, timestamp: Date.now() });
-        
-        // Transition to next player
         room.activePlayerIndex = (room.activePlayerIndex + 1) % room.players.length;
         room.currentTurn += 1;
         room.turnStartTime = Date.now();
-        
-        // Reset Karma for the NEW active player
+        // Reset KP for the new active player
         room.players[room.activePlayerIndex].karmaPoints = 3;
+        room.gameLogs.push({ id: generateId(), turn: room.currentTurn, playerName: player.name, action: 'concluded their manifestations', kpSpent: 0, timestamp: Date.now() });
         break;
     }
   }

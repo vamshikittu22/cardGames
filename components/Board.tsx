@@ -35,6 +35,7 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
   const otherPlayers = useMemo(() => room.players.filter(p => p.id !== currentPlayerId), [room.players, currentPlayerId]);
   const isGameOver = room.status === 'finished';
 
+  // Turn animation logic
   useEffect(() => {
     setShowTurnOverlay(true);
     const t = setTimeout(() => setShowTurnOverlay(false), 2000);
@@ -51,7 +52,7 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
   }, [room.roomCode, currentPlayerId]);
 
   const handleAction = useCallback((label: string, cost: number) => {
-    if (!isMyTurn || isGameOver) return showToast("Thy spirit is yet to cycle...", "red");
+    if (!isMyTurn || isGameOver) return showToast("Awaiting thy manifestation cycle...", "red");
     
     if (label === 'Draw Card') {
       if (currentPlayer.karmaPoints < 1) return showToast("Insufficient Karma.", "red");
@@ -86,7 +87,7 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
     } else if (label === 'Play Maya') {
       if (card.type !== 'Maya') return showToast("Requires a Maya manifestation.", "red");
       setTargetingMode('maya');
-      showToast("Select a Major to manifest illusion.", "#2563EB");
+      showToast("Select any Major to manifest illusion.", "#2563EB");
     } else {
       emitAction('PLAY_CARD', { cardId: selectedCardId, cost: cost || 1 });
       setSelectedCardId(null);
@@ -169,7 +170,6 @@ export const Board: React.FC<BoardProps> = ({ room, currentPlayerId, onLeaveRoom
         />
       )}
 
-      {/* Adjusted padding/margin for better vertical space */}
       <main className="flex-1 mt-24 mb-[320px] flex flex-col items-center overflow-y-auto scrollbar-hide px-6 pb-20">
         <div className="w-full max-w-screen-2xl flex justify-center gap-12 flex-wrap mb-12 pt-8">
           {otherPlayers.map((p) => (
